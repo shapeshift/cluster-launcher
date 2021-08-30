@@ -1,6 +1,6 @@
 # Cluster launcher
 
-The cluster launcher is a pulumi package used to create an eks cluster. This is currently being used to deploy **[unchained's cluster](https://github.com/CroixDrinkers/unchained)**.
+The cluster launcher is a pulumi package used to create an eks cluster. This is currently being used to deploy **[unchained's cluster](https://github.com/shapeshift/unchained)**. Eventually it could include other cloud kubernetes providers like GKE, AKS, etc ...
 
 ## Dependencies
 
@@ -103,4 +103,4 @@ This package deploys everything nessesary for an opperational eks cluster includ
 ## Additional Notes
 
 -   traefik dashboard is accessible through port forwarding at path `/dashboard/#`
--   we are currently using instance role for route53, but this can be dangerous because ALL pods in cluster will be allowed to modify route53. Be careful with what workloads are running in this cluster
+-   we are currently using instance role for route53, but this can be dangerous because ALL pods in cluster will be allowed to modify route53. Be careful with what workloads are running in this cluster. [more information](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#ec2-instance-role-not-recommended)
