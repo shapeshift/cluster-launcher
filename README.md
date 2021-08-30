@@ -1,0 +1,106 @@
+# Cluster launcher
+
+The cluster launcher is a pulumi package used to create an eks cluster. This is currently being used to deploy **[unchained's cluster](https://github.com/CroixDrinkers/unchained)**.
+
+## Dependencies
+
+-   [pulumi](https://www.pulumi.com/docs/index.html)
+-   [helm3](https://helm.sh/)
+    -   [traefik helm chart](https://doc.traefik.io/traefik/getting-started/install-traefik/#use-the-helm-chart)
+    -   [external-dns](https://artifacthub.io/packages/helm/bitnami/external-dns)
+
+## Installing
+
+To use from javascript or Typescript in Node.js install using either:
+
+`npm`:
+
+    $ npm install @shapeshiftoss/cluster-launcher
+
+or `yarn`:
+
+    $ yarn add @shapeshiftoss/cluster-launcher
+
+## Example Usage
+
+### Configure Route53 / DNS Registrar
+
+In order for `external-dns` and `cert-manager` to opperated correctly. rootDnsName must be created in route53 manually and NS servers must be updated on registrar
+
+1. Go to [route53 in AWS console](https://console.aws.amazon.com/route53/v2/home#Dashboard)
+2. Create a new `Hosted Zone` by clicking `Create hosted zone`
+3. Enter your `Domain Name` that you own and plan on using for this EKS cluster. Leave it public and save.
+4. Copy the name servers found in the `NS` record it should be 4 values looking something like:
+    ```
+    ns-1570.awsdns-04.co.uk.
+    ns-810.awsdns-37.net.
+    ns-265.awsdns-33.com.
+    ns-1050.awsdns-03.org.
+    ```
+5. Update / Change nameservers wherever your domain is currently setup.
+    - [Example for Godaddy](https://ph.godaddy.com/help/change-nameservers-for-my-domains-664)
+
+### Configure AWS CLI credentials
+
+1. If you do not have a `aws_access_key_id` and `aws_secret_access_key` create one for your user on [IAM](https://console.aws.amazon.com/iamv2/home?#/users)
+
+    - Select your user --> Security credentials --> create Access Key
+
+2. If you do not have a credentials file found `~/.aws/credentials` create one.
+    ```shell
+    $ touch ~/.aws/credentials
+    ```
+3. If you haven't setup a profile before just setup a default copying the credentials you created
+    ```shell
+    $ cat <<EOT >> ~/.aws/credentials
+    [default]
+    aws_access_key_id = <Your Access Key ID>
+    aws_secret_access_key = <Your Secret Access Key>
+    EOT
+    ```
+
+    if you have simply create a new profile whatever you want to name it inside `[]`. You will need to specify profile in the `EKSClusterLauncherArgs` otherwise it will use `default`
+    ```shell
+    $ cat <<EOT >> ~/.aws/credentials
+    [New-Profile-Name]
+    aws_access_key_id = <Access-Key-ID>
+    aws_secret_access_key = <Secret-Access-Key>
+    EOT
+    ```
+
+
+Now you are ready to use the `EKSClusterLauncher`
+
+```typescript
+import { EKSClusterLauncher } from '@shapeshiftoss/cluster-launcher'
+
+const cluster = await EKSClusterLauncher.create(app, {
+    rootDomainName: 'example.com', // Domain configured in Route53
+    instanceTypes: ['t3.small', 't3.medium', 't3.large'] // List of instances to be used for worker nodes
+})
+
+const kubeconfig = cluster.kubeconfig
+
+const k8sProvider = new Provider('kube-provider', { kubeconfig })
+```
+
+---
+
+## Deployed resources
+
+This package deploys everything nessesary for an opperational eks cluster including:
+
+-   VPC (subnets, route tables, NAT, Internet Gateway)
+-   EKS Cluster (Master Node)
+-   Managed Node group per AZ (Worker Nodes)
+-   Namespace in cluster for all of the additional services `<name>-infra`
+-   Additional Services:
+    -   Cert Manager configured for lets encrypt
+    -   Traefik as Ingress Controller
+    -   External DNS for dynamic configuration of route53 records from Ingress objects
+    -   A simple Hello World app at `helloworld.<rootDomainName>` to see that all components are working correctly
+
+## Additional Notes
+
+-   traefik dashboard is accessible through port forwarding at path `/dashboard/#`
+-   we are currently using instance role for route53, but this can be dangerous because ALL pods in cluster will be allowed to modify route53. Be careful with what workloads are running in this cluster
