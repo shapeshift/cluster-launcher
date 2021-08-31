@@ -1,12 +1,13 @@
 import * as aws from '@pulumi/aws'
-import * as k8s from '@pulumi/kubernetes'
 import * as awsx from '@pulumi/awsx'
+import * as eks from '@pulumi/eks'
+import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 
-import createCluster from './cluster'
+import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
-import * as externalDNS from './externalDNS'
+import createCluster from './cluster'
 import { deployCertManager } from './crds'
 
 export interface EKSClusterLauncherArgs {
@@ -39,15 +40,39 @@ export interface EKSClusterLauncherArgs {
      * __default__: undefined
      */
     email?: string
-    /**
-     * List of cidrs to allow ingress into the cluster
-     * If this is empty 0.0.0.0/0 is used allow ALL traffic into the cluster
+
+    /** traefik allows customization of the traefik ingress controller
+     * 
+     * __default__: defaults to allow All traffic into the cluster, with 3 replicas using 300m cpu and 256 Mi per replica
      */
-    whitelist?: string[]
+    traefik?: {
+        /** whitelist is a list of cidrs to allow ingress into the cluster
+         * 
+         * __default__: 0.0.0.0/0 (WARNING: allowing ALL traffic into the cluster)
+         */
+        whitelist?: string[]
+        /** replicas is the number of traefik pods to run 
+         * 
+         *__default__: 3
+        */
+        replicas: number
+        /** resources is used to specify how much memory and cpu to give traefik pods
+         * 
+         * __default__ : { cpu: '300m', memory: '256Mi' }
+         */
+        resources?: {
+            cpu: string
+            memory: string
+        }
+
+    }
 }
 
 export class EKSClusterLauncher extends pulumi.ComponentResource {
     kubeconfig?: pulumi.Output<string>
+    cluster?: eks.Cluster
+    providers?: { aws: aws.Provider, k8s: k8s.Provider }
+    namespace?: k8s.core.v1.Namespace
 
     constructor(name: string, args: EKSClusterLauncherArgs, opts?: pulumi.ComponentResourceOptions) {
         super('EKSClusterLauncher', name, args, opts)
@@ -60,7 +85,14 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             region: 'us-east-1',
             cidrBlock: '10.0.0.0/16',
             email: undefined,
-            whitelist: []
+            traefik: {
+                whitelist: [],
+                replicas: 3,
+                resources: {
+                    cpu: '300m',
+                    memory: '256Mi'
+                }
+            },
         }
 
         args = Object.assign(defaults, args)
@@ -86,7 +118,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const k8sProvider = new k8s.Provider(name, { kubeconfig })
 
         // create a namespace for everything infra related
-        new k8s.core.v1.Namespace(namespace, { metadata: { name: namespace } }, { provider: k8sProvider })
+        const infraNamespace = new k8s.core.v1.Namespace(namespace, { metadata: { name: namespace } }, { provider: k8sProvider })
 
         // deploy cert manager before traefik and external dns
         deployCertManager(namespace, args.rootDomainName, args.region as aws.Region, k8sProvider, args.email)
@@ -95,8 +127,9 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 namespace,
-                resources: { cpu: '300m', memory: '256Mi' },
-                whitelist: args.whitelist as string[],
+                replicas: args.traefik?.replicas as number,
+                resources: args.traefik?.resources as { cpu: string, memory: string },
+                whitelist: args.traefik?.whitelist as [],
                 privateCidr: args.cidrBlock as string
             },
             { provider: k8sProvider }
@@ -119,7 +152,14 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         )
 
         const eksCluster = new EKSClusterLauncher(name, args, opts)
+
         eksCluster.kubeconfig = kubeconfig
+        eksCluster.cluster = cluster
+        eksCluster.providers = {
+            aws: awsProvider,
+            k8s: k8sProvider
+        }
+        eksCluster.namespace = infraNamespace
 
         return eksCluster
     }
