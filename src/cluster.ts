@@ -15,7 +15,8 @@ interface ClusterArgs {
     autoscaling: {
         minInstances: number
         maxInstances: number
-    }
+    },
+    enabledClusterAutoscaler: boolean
 }
 
 export default async (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) => {
@@ -98,19 +99,18 @@ export default async (name: string, args: ClusterArgs, opts: ComponentResourceOp
                 ...opts,
                 parent: launchTemplates,
                 transformations: [
-                    // TODO add this back with checking if cluster-autoscaler is deployed
-                    //args => {
-                    //    // This is to ignore scaling config in case of cluster-autoscaler
-                    //    if (args.type === 'aws:eks/nodeGroup:NodeGroup') {
-                    //        return {
-                    //            props: args.props,
-                    //            opts: pulumi.mergeOptions(args.opts, {
-                    //                ignoreChanges: ['scalingConfig.desiredSize']
-                    //            })
-                    //        }
-                    //    }
-                    //    return
-                    //}
+                    manifest => {
+                        // This is to ignore scaling config in case of cluster-autoscaler because it sets desiredSize
+                        if (manifest.type === 'aws:eks/nodeGroup:NodeGroup' && args.enabledClusterAutoscaler) {
+                            return {
+                                props: manifest.props,
+                                opts: pulumi.mergeOptions(manifest.opts, {
+                                    ignoreChanges: ['scalingConfig.desiredSize']
+                                })
+                            }
+                        }
+                        return
+                    }
                 ]
             }
         )
