@@ -8,7 +8,8 @@ import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
 import createCluster from './cluster'
-import { deployCertManager } from './crds'
+import * as crds from './crds'
+import * as autoscaler from './clusterAutoscaler'
 
 export interface EKSClusterLauncherArgs {
     /** rootDomainName is the public dns name to configure external-dns and cert manager with */
@@ -22,8 +23,9 @@ export interface EKSClusterLauncherArgs {
      * __default__: { minInstances: 1, maxInstances: 3 }
      */
     autoscaling?: {
-        minInstances?: number
-        maxInstances?: number
+        enabled: boolean
+        minInstances: number
+        maxInstances: number
     }
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
@@ -95,6 +97,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             cidrBlock: '10.0.0.0/16',
             numInstancesPerAZ: 1,
             autoscaling: {
+                enabled: false,
                 maxInstances: 3,
                 minInstances: 1
             },
@@ -140,6 +143,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             {
                 autoscaling: argsWithDefaults.autoscaling,
                 vpc,
+                enabledClusterAutoscaler: argsWithDefaults.autoscaling.enabled,
                 instanceTypes: argsWithDefaults.instanceTypes,
                 numberOfInstancesPerAz: argsWithDefaults.numInstancesPerAZ
             },
@@ -157,7 +161,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         )
 
         // deploy cert manager before traefik and external dns
-        deployCertManager(
+        // also deploy metric-server
+        crds.deploy(
             namespace,
             argsWithDefaults.rootDomainName,
             argsWithDefaults.region,
@@ -185,6 +190,13 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { cluster, namespace, zone: zone as unknown as aws.route53.Zone, awsProvider },
             { provider: cluster.provider }
         )
+
+        if (argsWithDefaults.autoscaling.enabled)
+            new autoscaler.Deployment(name, {
+                cluster: cluster,
+                namespace: namespace,
+                providers: { aws: awsProvider, k8s: cluster.provider }
+            })
 
         // test hello world deployment to verify cluster is working correctly (default namespace)
         const hw = new helloWorld.Deployment(

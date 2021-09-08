@@ -1,16 +1,22 @@
 import * as k8s from '@pulumi/kubernetes'
 import { certmanager } from './types/cert-manager'
 
-export const deployCertManager = (
+export const deploy = (
     namespace: string,
     dnsZone: string,
     region: string,
     provider: k8s.Provider,
-    email?: string,
+    email?: string
 ) => {
     const certManager = new k8s.yaml.ConfigFile(
         'cert-manager',
         { file: `${__dirname}/cert-manager.yaml` },
+        { provider }
+    )
+
+    const metricsServer = new k8s.yaml.ConfigFile(
+        'metrics-server',
+        { file: `${__dirname}/metrics-server.yaml` },
         { provider }
     )
 
