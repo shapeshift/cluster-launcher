@@ -8,7 +8,7 @@ import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
 import createCluster from './cluster'
-import { deployCertManager } from './crds'
+import * as crds from './crds'
 
 export interface EKSClusterLauncherArgs {
     /** rootDomainName is the public dns name to configure external-dns and cert manager with */
@@ -157,7 +157,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         )
 
         // deploy cert manager before traefik and external dns
-        deployCertManager(
+        // also deploy metric-server
+        crds.deploy(
             namespace,
             argsWithDefaults.rootDomainName,
             argsWithDefaults.region,
