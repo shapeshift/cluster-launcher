@@ -161,7 +161,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                     ]
                 }
             },
-            { ...opts, dependsOn: this.ready }
+            { ...opts, dependsOn: this.ready, parent: this }
         )
     }
 }
