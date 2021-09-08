@@ -8,30 +8,36 @@ export type ComponentResourceOptionsWithProvider = ComponentResourceOptions & {
     provider: aws.Provider
 }
 
-export default async (
-    name: string,
-    vpc: awsx.ec2.Vpc,
-    instanceTypes: aws.ec2.InstanceType[],
-    opts: ComponentResourceOptionsWithProvider
-) => {
+interface ClusterArgs {
+    vpc: awsx.ec2.Vpc
+    instanceTypes: aws.ec2.InstanceType[]
+    numberOfInstancesPerAz: number
+    autoscaling: {
+        minInstances: number
+        maxInstances: number
+    }
+}
+
+export default async (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) => {
     const tags = { iac: `pulumi-${name}` }
 
-    const privateSubnets = await vpc.privateSubnets
-    const publicSubnetIds = await vpc.publicSubnetIds
-    const privateSubnetIds = await vpc.privateSubnetIds
+    const privateSubnets = await args.vpc.privateSubnets
+    const publicSubnetIds = await args.vpc.publicSubnetIds
+    const privateSubnetIds = await args.vpc.privateSubnetIds
 
     const profileName = opts.provider.profile as pulumi.Output<string>
 
     const cluster = new eks.Cluster(
         name,
         {
-            vpcId: vpc.id,
+            vpcId: args.vpc.id,
             skipDefaultNodeGroup: true,
             maxSize: 0, // We are using SPOT instance managed node groups instead
             minSize: 0, // We are using SPOT instance managed node groups instead
             desiredCapacity: 0, // We are using SPOT instance managed node groups instead
             subnetIds: [...publicSubnetIds, ...privateSubnetIds],
             providerCredentialOpts: { profileName },
+
             tags
         },
         opts
@@ -62,7 +68,7 @@ export default async (
                 }
             ]
         },
-        opts
+        { ...opts, parent: cluster }
     )
 
     privateSubnets.forEach(({ subnet }, index) => {
@@ -70,14 +76,14 @@ export default async (
             `${name}-${index}`,
             {
                 cluster: cluster,
-                instanceTypes,
+                instanceTypes: args.instanceTypes,
                 capacityType: 'SPOT',
                 subnetIds: [subnet.id],
                 nodeRole: cluster.instanceRoles[0],
                 scalingConfig: {
-                    maxSize: 3,
-                    minSize: 1,
-                    desiredSize: 1
+                    maxSize: args.autoscaling.maxInstances,
+                    minSize: args.autoscaling.minInstances,
+                    desiredSize: args.numberOfInstancesPerAz
                 },
                 tags: {
                     Name: `${name}-eks-worker`,
@@ -90,19 +96,21 @@ export default async (
             },
             {
                 ...opts,
+                parent: launchTemplates,
                 transformations: [
-                    args => {
-                        // This is to ignore scaling config in case of cluster-autoscaler
-                        if (args.type === 'aws:eks/nodeGroup:NodeGroup') {
-                            return {
-                                props: args.props,
-                                opts: pulumi.mergeOptions(args.opts, {
-                                    ignoreChanges: ['scalingConfig']
-                                })
-                            }
-                        }
-                        return
-                    }
+                    // TODO add this back with checking if cluster-autoscaler is deployed
+                    //args => {
+                    //    // This is to ignore scaling config in case of cluster-autoscaler
+                    //    if (args.type === 'aws:eks/nodeGroup:NodeGroup') {
+                    //        return {
+                    //            props: args.props,
+                    //            opts: pulumi.mergeOptions(args.opts, {
+                    //                ignoreChanges: ['scalingConfig.desiredSize']
+                    //            })
+                    //        }
+                    //    }
+                    //    return
+                    //}
                 ]
             }
         )

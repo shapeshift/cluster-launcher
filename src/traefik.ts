@@ -5,6 +5,7 @@ export interface ingressControllerArgs {
     namespace: pulumi.Input<string>
     resources: { cpu: string; memory: string }
     privateCidr: string
+    replicas: number
     /**
      * List of cidrs to allow ingress into the cluster
      * If this is empty 0.0.0.0/0 is used allow ALL traffic into the cluster
@@ -121,7 +122,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                         minAvailable: 2
                     },
                     deployment: {
-                        replicas: 3
+                        replicas: args.replicas
                     }
                 },
                 transformations: [
@@ -160,7 +161,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                     ]
                 }
             },
-            { ...opts, dependsOn: this.ready }
+            { ...opts, dependsOn: this.ready, parent: this }
         )
     }
 }

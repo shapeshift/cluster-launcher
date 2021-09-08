@@ -3,3 +3,4 @@
 dist
 Pulumi.*.yaml
 !Pulumi.sample.yaml
+example
