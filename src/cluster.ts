@@ -98,18 +98,19 @@ export default async (name: string, args: ClusterArgs, opts: ComponentResourceOp
                 ...opts,
                 parent: launchTemplates,
                 transformations: [
-                    args => {
-                        // This is to ignore scaling config in case of cluster-autoscaler
-                        if (args.type === 'aws:eks/nodeGroup:NodeGroup') {
-                            return {
-                                props: args.props,
-                                opts: pulumi.mergeOptions(args.opts, {
-                                    ignoreChanges: ['scalingConfig.desiredSize']
-                                })
-                            }
-                        }
-                        return
-                    }
+                    // TODO add this back with checking if cluster-autoscaler is deployed
+                    //args => {
+                    //    // This is to ignore scaling config in case of cluster-autoscaler
+                    //    if (args.type === 'aws:eks/nodeGroup:NodeGroup') {
+                    //        return {
+                    //            props: args.props,
+                    //            opts: pulumi.mergeOptions(args.opts, {
+                    //                ignoreChanges: ['scalingConfig.desiredSize']
+                    //            })
+                    //        }
+                    //    }
+                    //    return
+                    //}
                 ]
             }
         )
