@@ -88,7 +88,7 @@ export class Deployment extends helm.v3.Chart {
                     })
                     .apply(JSON.stringify)
             },
-            { provider: args.awsProvider, parent: this }
+            { ...opts, provider: args.awsProvider, parent: this }
         )
 
         new iam.RolePolicyAttachment(
@@ -98,7 +98,7 @@ export class Deployment extends helm.v3.Chart {
                 role: args.cluster.instanceRoles[0].name,
                 policyArn: iamPolicy.arn
             },
-            { provider: args.awsProvider, parent: this }
+            { ...opts, provider: args.awsProvider, parent: this }
         )
     }
 }
