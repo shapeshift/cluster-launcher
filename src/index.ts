@@ -123,10 +123,14 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         } as DeepRequired<EKSClusterLauncherArgs>
 
         const namespace = `${name}-infra`
-        const awsProvider = new aws.Provider(name, {
-            profile: argsWithDefaults.profile,
-            region: argsWithDefaults.region
-        })
+        const awsProvider = new aws.Provider(
+            name,
+            {
+                profile: argsWithDefaults.profile,
+                region: argsWithDefaults.region
+            },
+            opts
+        )
 
         const vpc = new awsx.ec2.Vpc(
             name,
@@ -153,22 +157,21 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             }
         )
 
+        const k8sProvider = new k8s.Provider(name, { kubeconfig }, { dependsOn: [cluster] })
+
         // create a namespace for everything infra related
         const infraNamespace = new k8s.core.v1.Namespace(
             namespace,
             { metadata: { name: namespace } },
-            { provider: cluster.provider }
+            { ...opts, provider: k8sProvider }
         )
 
         // deploy cert manager before traefik and external dns
         // also deploy metric-server
-        crds.deploy(
-            namespace,
-            argsWithDefaults.rootDomainName,
-            argsWithDefaults.region,
-            cluster.provider,
-            argsWithDefaults.email
-        )
+        crds.deploy(namespace, argsWithDefaults.rootDomainName, argsWithDefaults.region, argsWithDefaults.email, {
+            ...opts,
+            provider: k8sProvider
+        })
 
         new traefik.Deployment(
             name,
@@ -179,30 +182,37 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 whitelist: argsWithDefaults.traefik.whitelist,
                 privateCidr: argsWithDefaults.cidrBlock
             },
-            { provider: cluster.provider }
+            { ...opts, provider: k8sProvider }
         )
 
         // assumes you have set up route53 and argsured your domain registrar with the appropriate ns records
-        const zone = await aws.route53.getZone({ name: argsWithDefaults.rootDomainName }, { provider: awsProvider })
+        const zone = await aws.route53.getZone(
+            { name: argsWithDefaults.rootDomainName },
+            { ...opts, provider: awsProvider }
+        )
 
         new externalDNS.Deployment(
             name,
             { cluster, namespace, zone: zone as unknown as aws.route53.Zone, awsProvider },
-            { provider: cluster.provider }
+            { ...opts, provider: k8sProvider }
         )
 
         if (argsWithDefaults.autoscaling.enabled)
-            new autoscaler.Deployment(name, {
-                cluster: cluster,
-                namespace: namespace,
-                providers: { aws: awsProvider, k8s: cluster.provider }
-            })
+            new autoscaler.Deployment(
+                name,
+                {
+                    cluster: cluster,
+                    namespace: namespace,
+                    providers: { aws: awsProvider, k8s: k8sProvider }
+                },
+                opts
+            )
 
         // test hello world deployment to verify cluster is working correctly (default namespace)
         const hw = new helloWorld.Deployment(
             'helloworld',
             { rootDomainName: argsWithDefaults.rootDomainName },
-            { provider: cluster.provider }
+            { ...opts, provider: k8sProvider }
         )
 
         const eksCluster = new EKSClusterLauncher(name, argsWithDefaults, opts)
@@ -211,7 +221,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         eksCluster.cluster = cluster
         eksCluster.providers = {
             aws: awsProvider,
-            k8s: cluster.provider
+            k8s: k8sProvider
         }
         eksCluster.namespace = infraNamespace
 

@@ -1,23 +1,24 @@
 import * as k8s from '@pulumi/kubernetes'
+import * as pulumi from '@pulumi/pulumi'
 import { certmanager } from './types/cert-manager'
 
 export const deploy = (
     namespace: string,
     dnsZone: string,
     region: string,
-    provider: k8s.Provider,
-    email?: string
+    email?: string,
+    opts?: pulumi.ComponentResourceOptions
 ) => {
     const certManager = new k8s.yaml.ConfigFile(
         'cert-manager',
         { file: `${__dirname}/cert-manager.yaml` },
-        { provider }
+        opts
     )
 
     const metricsServer = new k8s.yaml.ConfigFile(
         'metrics-server',
         { file: `${__dirname}/metrics-server.yaml` },
-        { provider }
+        opts
     )
 
     //Also Issuer for ACME using lets encrypt
@@ -46,6 +47,6 @@ export const deploy = (
                 }
             }
         },
-        { provider, dependsOn: certManager, deleteBeforeReplace: true }
+        { ...opts, dependsOn: certManager, deleteBeforeReplace: true }
     )
 }

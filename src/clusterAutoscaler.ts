@@ -10,7 +10,7 @@ export interface deploymentArgs {
 }
 
 export class Deployment extends k8s.helm.v3.Chart {
-    constructor(name: string, args: deploymentArgs) {
+    constructor(name: string, args: deploymentArgs, opts?: pulumi.ComponentResourceOptions) {
         super(
             `${name}-cluster-autoscaler`,
             {
@@ -61,7 +61,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                     }
                 ]
             },
-            { parent: args.cluster, provider: args.providers.k8s }
+            { ...opts, parent: args.cluster, provider: args.providers.k8s }
         )
 
         const autoscalerPolicy = new aws.iam.Policy(
@@ -86,7 +86,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                     ]
                 }
             },
-            { parent: args.cluster, provider: args.providers.aws }
+            { ...opts, parent: args.cluster, provider: args.providers.aws }
         )
 
         new aws.iam.RolePolicyAttachment(
@@ -95,7 +95,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 policyArn: autoscalerPolicy.arn,
                 role: args.cluster.instanceRoles[0]
             },
-            { parent: args.cluster, provider: args.providers.aws }
+            { ...opts, parent: args.cluster, provider: args.providers.aws }
         )
     }
 }
