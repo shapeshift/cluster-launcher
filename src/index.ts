@@ -90,7 +90,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
     }
 
     static async create(name: string, args: EKSClusterLauncherArgs, opts?: pulumi.ComponentResourceOptions) {
-        const defaults: Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'instanceTypes'> = {
+        type DeepRequired<T> = {
+            [P in keyof T]-?: DeepRequired<T[P]>
+        }
+
+        const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'instanceTypes' | 'email'>> = {
             allAZs: false,
             profile: 'default',
             region: 'us-east-1',
@@ -101,7 +105,6 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 maxInstances: 3,
                 minInstances: 1
             },
-            email: undefined,
             traefik: {
                 whitelist: [],
                 replicas: 3,
@@ -112,15 +115,26 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             }
         }
 
-        type DeepRequired<T> = {
-            [P in keyof T]-?: DeepRequired<T[P]>
+        const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
+            instanceTypes: args.instanceTypes,
+            rootDomainName: args.rootDomainName,
+            allAZs: args.allAZs ?? defaults.allAZs,
+            profile: args.profile ?? defaults.profile,
+            region: args.region ?? defaults.region,
+            cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
+            numInstancesPerAZ: args.numInstancesPerAZ ?? defaults.numInstancesPerAZ,
+            autoscaling: {
+                enabled: args.autoscaling?.enabled ?? defaults.autoscaling.enabled,
+                maxInstances: args.autoscaling?.maxInstances ?? defaults.autoscaling.maxInstances,
+                minInstances: args.autoscaling?.minInstances ?? defaults.autoscaling.minInstances
+            },
+            email: args.email,
+            traefik: {
+                whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
+                replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
+                resources: args.traefik?.resources ?? defaults.traefik.resources
+            }
         }
-
-        const argsWithDefaults = {
-            ...defaults,
-            ...args,
-            traefik: { ...defaults.traefik, ...args.traefik } // make sure to spread nested optional reasources
-        } as DeepRequired<EKSClusterLauncherArgs>
 
         const namespace = `${name}-infra`
         const awsProvider = new aws.Provider(
