@@ -1,6 +1,6 @@
 {
     "name": "@shapeshiftoss/cluster-launcher",
-    "version": "0.6.3",
+    "version": "0.6.4",
     "license": "MIT",
     "main": "dist/index.js",
     "source": "src/index.ts",
@@ -13,14 +13,14 @@
         "clean": "rm -rf dist node_modules"
     },
     "dependencies": {
-        "@pulumi/aws": "^4.0.0",
-        "@pulumi/awsx": "^0.31.0",
-        "@pulumi/eks": "^0.32.0",
-        "@pulumi/kubernetesx": "^0.1.6",
-        "@pulumi/pulumi": "^3.0.0"
+        "@pulumi/aws": "4.17.0",
+        "@pulumi/awsx": "0.31.0",
+        "@pulumi/eks": "0.32.0",
+        "@pulumi/kubernetesx": "0.1.6",
+        "@pulumi/pulumi": "3.11.0"
     },
     "devDependencies": {
-        "@types/node": "^10.0.0"
+        "@types/node": "14.16.0"
     },
     "prettier": {
         "tabWidth": 4,
