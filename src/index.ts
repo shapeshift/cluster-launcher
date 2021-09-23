@@ -211,7 +211,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             {
                 cluster: cluster,
                 namespace: namespace,
-                providers: { aws: awsProvider, k8s: k8sProvider }
+                providers: { k8s: k8sProvider }
             },
             opts
         )
