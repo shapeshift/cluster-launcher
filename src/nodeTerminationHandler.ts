@@ -1,4 +1,3 @@
-import * as aws from '@pulumi/aws'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 import { Cluster } from '@pulumi/eks'
@@ -6,7 +5,7 @@ import { Cluster } from '@pulumi/eks'
 export interface deploymentArgs {
     namespace: pulumi.Input<string>
     cluster: Cluster
-    providers: { aws: aws.Provider; k8s: k8s.Provider }
+    providers: { k8s: k8s.Provider }
 }
 
 export class Deployment extends k8s.helm.v3.Chart {
