@@ -210,16 +210,20 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 cluster: cluster,
-                namespace: namespace,
-                providers: { k8s: k8sProvider }
+                namespace: namespace
             },
-            opts
+            { ...opts, provider: k8sProvider }
         )
 
         new externalDNS.Deployment(
             name,
-            { cluster, namespace, zone: zone as unknown as aws.route53.Zone, awsProvider },
-            { ...opts, provider: k8sProvider }
+            {
+                cluster: cluster,
+                namespace,
+                zone: zone as unknown as aws.route53.Zone,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
         )
 
         if (argsWithDefaults.autoscaling.enabled)

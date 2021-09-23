@@ -98,6 +98,7 @@ This package deploys everything nessesary for an opperational eks cluster includ
     -   Cert Manager configured for lets encrypt
     -   Traefik as Ingress Controller
     -   External DNS for dynamic configuration of route53 records from Ingress objects
+    -   AWS Node Termination Handler to ensure we can gracefully stop services if SPOT instances are preempted 
     -   A simple Hello World app at `helloworld.<rootDomainName>` to see that all components are working correctly
 
 ## Additional Notes

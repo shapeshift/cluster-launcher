@@ -5,7 +5,6 @@ import { Cluster } from '@pulumi/eks'
 export interface deploymentArgs {
     namespace: pulumi.Input<string>
     cluster: Cluster
-    providers: { k8s: k8s.Provider }
 }
 
 export class Deployment extends k8s.helm.v3.Chart {
@@ -25,10 +24,10 @@ export class Deployment extends k8s.helm.v3.Chart {
                     podTerminationGracePeriod: '-1', //If negative, use value defined in pod
                     nodeTerminationGracePeriod: '120',
                     enablePrometheusServer: 'false', //For later use
-                    emitKubernetesEvents: 'false', //For later use
+                    emitKubernetesEvents: 'false' //For later use
                 }
             },
-            { ...opts, parent: args.cluster, provider: args.providers.k8s }
+            { ...opts, parent: args.cluster }
         )
     }
 }
