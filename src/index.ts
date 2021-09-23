@@ -7,6 +7,7 @@ import * as pulumi from '@pulumi/pulumi'
 import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
+import * as nodeTerminationHandler from './nodeTerminationHandler'
 import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
@@ -203,6 +204,16 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const zone = await aws.route53.getZone(
             { name: argsWithDefaults.rootDomainName },
             { ...opts, provider: awsProvider }
+        )
+
+        new nodeTerminationHandler.Deployment(
+            name,
+            {
+                cluster: cluster,
+                namespace: namespace,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
         )
 
         new externalDNS.Deployment(
