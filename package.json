@@ -20,7 +20,7 @@
         "@pulumi/pulumi": "3.11.0"
     },
     "devDependencies": {
-        "@types/node": "14.16.0"
+        "@types/node": "^14.14.7"
     },
     "prettier": {
         "tabWidth": 4,
