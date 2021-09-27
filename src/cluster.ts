@@ -19,7 +19,7 @@ interface ClusterArgs {
     enabledClusterAutoscaler: boolean
 }
 
-export default async (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) => {
+export default async function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
     const tags = { iac: `pulumi-${name}` }
 
     const privateSubnets = await args.vpc.privateSubnets

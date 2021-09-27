@@ -1,19 +1,18 @@
-import { Input, ComponentResourceOptions } from '@pulumi/pulumi'
-import { route53, iam, Provider } from '@pulumi/aws'
-import { Cluster } from '@pulumi/eks'
-import { helm } from '@pulumi/kubernetes'
+import * as aws from '@pulumi/aws'
+import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
+import { Cluster } from '@pulumi/eks'
 
 export interface dnsControllerArgs {
-    awsProvider: Provider
-    zone: route53.Zone
+    zone: aws.route53.Zone
     cluster: Cluster
-    namespace: Input<string>
+    namespace: pulumi.Input<string>
+    providers: { aws: aws.Provider, k8s: k8s.Provider }
 }
 
 // Requires cert manager to be present beforehand
-export class Deployment extends helm.v3.Chart {
-    constructor(name: string, args: dnsControllerArgs, opts: ComponentResourceOptions) {
+export class Deployment extends k8s.helm.v3.Chart {
+    constructor(name: string, args: dnsControllerArgs, opts?: pulumi.ComponentResourceOptions) {
         super(
             `${name}-external-dns-helmchart`,
             {
@@ -47,11 +46,11 @@ export class Deployment extends helm.v3.Chart {
                     }
                 }
             },
-            opts
+            { ...opts, provider: args.providers.k8s }
         )
 
         // create iam role
-        const iamPolicy = new iam.Policy(
+        const iamPolicy = new aws.iam.Policy(
             `${name}-external-dns-role-policy`,
             {
                 policy: pulumi
@@ -88,17 +87,17 @@ export class Deployment extends helm.v3.Chart {
                     })
                     .apply(JSON.stringify)
             },
-            { ...opts, provider: args.awsProvider, parent: this }
+            { ...opts, provider: args.providers.aws, parent: this }
         )
 
-        new iam.RolePolicyAttachment(
+        new aws.iam.RolePolicyAttachment(
             name,
             {
                 // TODO don't use instance role because it's sketch : https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#ec2-instance-role-not-recommended
                 role: args.cluster.instanceRoles[0].name,
                 policyArn: iamPolicy.arn
             },
-            { ...opts, provider: args.awsProvider, parent: this }
+            { ...opts, provider: args.providers.aws, parent: this }
         )
     }
 }

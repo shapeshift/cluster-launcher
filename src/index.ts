@@ -7,6 +7,7 @@ import * as pulumi from '@pulumi/pulumi'
 import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
+import * as nodeTerminationHandler from './nodeTerminationHandler'
 import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
@@ -205,10 +206,24 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: awsProvider }
         )
 
+        new nodeTerminationHandler.Deployment(
+            name,
+            {
+                cluster: cluster,
+                namespace: namespace
+            },
+            { ...opts, provider: k8sProvider }
+        )
+
         new externalDNS.Deployment(
             name,
-            { cluster, namespace, zone: zone as unknown as aws.route53.Zone, awsProvider },
-            { ...opts, provider: k8sProvider }
+            {
+                cluster: cluster,
+                namespace,
+                zone: zone as unknown as aws.route53.Zone,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
         )
 
         if (argsWithDefaults.autoscaling.enabled)
