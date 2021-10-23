@@ -8,6 +8,9 @@ import * as externalDNS from './externalDNS'
 import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
 import * as nodeTerminationHandler from './nodeTerminationHandler'
+import * as loki from './loki'
+import * as prometheus from './prometheus'
+import * as grafana from './grafana'
 import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
@@ -24,15 +27,20 @@ export interface EKSClusterLauncherArgs {
      * __default__: { minInstances: 1, maxInstances: 3 }
      */
     autoscaling?: {
-        enabled: boolean
-        minInstances: number
-        maxInstances: number
+        enabled?: boolean
+        minInstances?: number
+        maxInstances?: number
     }
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
      * __default__: false
      */
     allAZs?: boolean
+    /** logging - if true we will create a promtail/loki deployment
+     *
+     * __default__: false
+     */
+    logging?: boolean
     /** profile is the local profile to use configured in ~/.aws/credentials file
      *
      * __default__: 'default'
@@ -101,6 +109,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             region: 'us-east-1',
             cidrBlock: '10.0.0.0/16',
             numInstancesPerAZ: 1,
+            logging: false,
             autoscaling: {
                 enabled: false,
                 maxInstances: 3,
@@ -119,6 +128,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
             instanceTypes: args.instanceTypes,
             rootDomainName: args.rootDomainName,
+            logging: args.logging ?? defaults.logging,
             allAZs: args.allAZs ?? defaults.allAZs,
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
@@ -183,7 +193,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
 
         // deploy cert manager before traefik and external dns
         // also deploy metric-server
-        crds.deploy(namespace, argsWithDefaults.rootDomainName, argsWithDefaults.region, argsWithDefaults.email, {
+        // ...also event-router
+        crds.deploy(namespace, argsWithDefaults.rootDomainName, argsWithDefaults.region, argsWithDefaults.logging, argsWithDefaults.email, {
             ...opts,
             provider: k8sProvider
         })
@@ -214,6 +225,27 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             },
             { ...opts, provider: k8sProvider }
         )
+
+        if (argsWithDefaults.logging) {
+            new loki.Deployment(
+                name,
+                {
+                    cluster: cluster,
+                    namespace: namespace
+                },
+                { ...opts, provider: k8sProvider }
+            )
+            new grafana.Deployment(
+                name,
+                {
+                    cluster: cluster,
+                    namespace: namespace,
+                    logging: argsWithDefaults.logging
+                    
+                },
+                { ...opts, provider: k8sProvider }
+            )
+        }
 
         new externalDNS.Deployment(
             name,
