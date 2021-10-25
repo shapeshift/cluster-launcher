@@ -100,6 +100,22 @@ This package deploys everything nessesary for an opperational eks cluster includ
     -   External DNS for dynamic configuration of route53 records from Ingress objects
     -   AWS Node Termination Handler to ensure we can gracefully stop services if SPOT instances are preempted 
     -   A simple Hello World app at `helloworld.<rootDomainName>` to see that all components are working correctly
+    -   A PLG (Promtail, Loki, Grafana) stack for log aggregation is available but not deployed by default
+
+## Access Grafana
+
+A very basic PLG stack can be implemented to aid in troubleshooting, this is how you can access Grafana from outside your cluster.
+
+_Replace `<templated variables>` with variables specific to your deployment_
+
+1. In the namespace where grafana is hosted get the admin password
+`kubectl get secret <grafana secret> -o jsonpath="{.data.admin-password}" | base64 --decode ; echo`
+
+2. Forward grafana port to local machine
+`kubectl port-forward service/<grafana service> 8080:80`
+
+3. On your local machine, navigate to `localhost:8080`
+`admin / <password retrieved during step 1>`
 
 ## Additional Notes
 
