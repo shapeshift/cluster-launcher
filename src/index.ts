@@ -26,9 +26,9 @@ export interface EKSClusterLauncherArgs {
      * __default__: { minInstances: 1, maxInstances: 3 }
      */
     autoscaling?: {
-        enabled?: boolean
-        minInstances?: number
-        maxInstances?: number
+        enabled: boolean
+        minInstances: number
+        maxInstances: number
     }
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
@@ -240,7 +240,6 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     cluster: cluster,
                     namespace: namespace,
                     logging: argsWithDefaults.logging
-                    
                 },
                 { ...opts, provider: k8sProvider }
             )

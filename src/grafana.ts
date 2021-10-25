@@ -11,7 +11,7 @@ export interface deploymentArgs {
 
 export class Deployment extends k8s.helm.v3.Chart {
     constructor(name: string, args: deploymentArgs, opts?: pulumi.ComponentResourceOptions) {
-        
+
         const datasources = []
         if (args.logging){
             datasources.push([
