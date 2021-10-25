@@ -14,24 +14,24 @@ export class Deployment extends k8s.helm.v3.Chart {
 
         const datasources = []
         if (args.logging){
-            datasources.push([
+            datasources.push(
                 {
                     name: 'Loki',
                     type: 'loki',
                     url: `http://${name}-loki:3100`,
                     access: 'proxy'
                 }
-            ])
+            )
         }
         if (args.metrics){
-            datasources.push([
+            datasources.push(
                 {
                     name: 'Prometheus',
                     type: 'prometheus',
                     url: `http://${name}-prometheus-server:80`,
                     access: 'proxy'
                 }
-            ])
+            )
         }
 
         super(

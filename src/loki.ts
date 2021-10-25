@@ -5,11 +5,26 @@ import { Cluster } from '@pulumi/eks'
 export interface deploymentArgs {
     namespace: pulumi.Input<string>
     cluster: Cluster
+    persistentVolume: boolean
+    pvSize: string
+    retentionPeriod: string
 }
 
 export class Deployment extends pulumi.ComponentResource {
     constructor(name: string, args: deploymentArgs, opts?: pulumi.ComponentResourceOptions) {
         super('loki', name, {}, opts)
+
+        const compactionConfig = args.persistentVolume ? {
+            compaction_interval: '10m',
+            retention_enabled: true,
+            retention_delete_delay: '2h',
+            retention_delete_worker_count: 150
+        } : {}
+
+        const limitsConfig = args.persistentVolume ? {
+            retention_period: args.retentionPeriod
+        } : {}
+
         new k8s.helm.v3.Chart(
             `${name}-loki`,
             {
@@ -19,13 +34,13 @@ export class Deployment extends pulumi.ComponentResource {
                 namespace: args.namespace,
                 version: '2.6.0',
                 values: {
-                    persistence: {
-                        enabled: true,
-                        accessModes: ['ReadWriteOnce'],
-                        size: '10Gi'
+                    config: {
+                        compactor: compactionConfig,
+                        limits_config: limitsConfig,
                     },
-                    limits_config: {
-                        retention_period: '336h'
+                    persistence: {
+                        enabled: args.persistentVolume,
+                        size: args.pvSize
                     }
                 }
             },

@@ -37,9 +37,16 @@ export interface EKSClusterLauncherArgs {
     allAZs?: boolean
     /** logging - if true we will create a promtail/loki deployment
      *
-     * __default__: false
+     * __default__: { enabled: false, persistentVolume: false, pvSize: '10Gi', retentionPeriod: '336h'}
+     * If persistentVolume is false, logs will be stored on ephemeral storage and will be lost if the loki pod is rescheduled
+     * pvSize must be at least 10Gi 
      */
-    logging?: boolean
+    logging?: {
+        enabled: boolean
+        persistentVolume: boolean
+        pvSize: string
+        retentionPeriod: string
+    }
     /** profile is the local profile to use configured in ~/.aws/credentials file
      *
      * __default__: 'default'
@@ -108,7 +115,12 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             region: 'us-east-1',
             cidrBlock: '10.0.0.0/16',
             numInstancesPerAZ: 1,
-            logging: false,
+            logging: {
+                enabled: false,
+                persistentVolume: false,
+                pvSize: '10Gi',
+                retentionPeriod: '336h'
+            },
             autoscaling: {
                 enabled: false,
                 maxInstances: 3,
@@ -127,7 +139,12 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
             instanceTypes: args.instanceTypes,
             rootDomainName: args.rootDomainName,
-            logging: args.logging ?? defaults.logging,
+            logging: {
+                enabled: args.logging?.enabled ?? defaults.logging.enabled,
+                persistentVolume: args.logging?.persistentVolume ?? defaults.logging.persistentVolume,
+                pvSize: args.logging?.pvSize ?? defaults.logging.pvSize,
+                retentionPeriod: args.logging?.retentionPeriod ?? defaults.logging.retentionPeriod
+            },
             allAZs: args.allAZs ?? defaults.allAZs,
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
@@ -193,7 +210,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         // deploy cert manager before traefik and external dns
         // also deploy metric-server
         // ...also event-router
-        crds.deploy(namespace, argsWithDefaults.rootDomainName, argsWithDefaults.region, argsWithDefaults.logging, argsWithDefaults.email, {
+        crds.deploy(namespace, argsWithDefaults.rootDomainName, argsWithDefaults.region, argsWithDefaults.logging.enabled, argsWithDefaults.email, {
             ...opts,
             provider: k8sProvider
         })
@@ -225,12 +242,15 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: k8sProvider }
         )
 
-        if (argsWithDefaults.logging) {
+        if (argsWithDefaults.logging.enabled) {
             new loki.Deployment(
                 name,
                 {
                     cluster: cluster,
-                    namespace: namespace
+                    namespace: namespace,
+                    persistentVolume: argsWithDefaults.logging.persistentVolume,
+                    pvSize: argsWithDefaults.logging.pvSize,
+                    retentionPeriod: argsWithDefaults.logging.retentionPeriod
                 },
                 { ...opts, provider: k8sProvider }
             )
@@ -239,7 +259,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 {
                     cluster: cluster,
                     namespace: namespace,
-                    logging: argsWithDefaults.logging
+                    logging: argsWithDefaults.logging.enabled
                 },
                 { ...opts, provider: k8sProvider }
             )
