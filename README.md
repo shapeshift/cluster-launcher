@@ -121,3 +121,4 @@ _Replace `<templated variables>` with variables specific to your deployment_
 
 -   traefik dashboard is accessible through port forwarding at path `/dashboard/#`
 -   we are currently using instance role for route53, but this can be dangerous because ALL pods in cluster will be allowed to modify route53. Be careful with what workloads are running in this cluster. [more information](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#ec2-instance-role-not-recommended)
+-   If using persistent volumes in the Loki stack you'll want to ensure EBS volumes are cleaned up if logging is disabled.  Default behavior is that persistent volume claims are not deleted when it's parent StatefulSet is deleted. Functionality to cleanup a PVC when a StatefulSet is removed is slated for release in [Kubernetes v1.23](https://github.com/kubernetes/enhancements/tree/master/keps/sig-apps/1847-autoremove-statefulset-pvcs)

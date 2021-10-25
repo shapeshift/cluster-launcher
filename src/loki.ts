@@ -14,16 +14,20 @@ export class Deployment extends pulumi.ComponentResource {
     constructor(name: string, args: deploymentArgs, opts?: pulumi.ComponentResourceOptions) {
         super('loki', name, {}, opts)
 
-        const compactionConfig = args.persistentVolume ? {
-            compaction_interval: '10m',
-            retention_enabled: true,
-            retention_delete_delay: '2h',
-            retention_delete_worker_count: 150
-        } : {}
+        const compactionConfig = args.persistentVolume
+            ? {
+                  compaction_interval: '10m',
+                  retention_enabled: true,
+                  retention_delete_delay: '2h',
+                  retention_delete_worker_count: 150
+              }
+            : {}
 
-        const limitsConfig = args.persistentVolume ? {
-            retention_period: args.retentionPeriod
-        } : {}
+        const limitsConfig = args.persistentVolume
+            ? {
+                  retention_period: args.retentionPeriod
+              }
+            : {}
 
         new k8s.helm.v3.Chart(
             `${name}-loki`,
@@ -36,7 +40,7 @@ export class Deployment extends pulumi.ComponentResource {
                 values: {
                     config: {
                         compactor: compactionConfig,
-                        limits_config: limitsConfig,
+                        limits_config: limitsConfig
                     },
                     persistence: {
                         enabled: args.persistentVolume,
@@ -60,59 +64,63 @@ export class Deployment extends pulumi.ComponentResource {
       - source_labels: ['__journal__hostname']
         target_label: 'hostname'
 `
-        new k8s.helm.v3.Chart(`${name}-promtail`, {
-            // https://github.com/grafana/helm-charts/tree/main/charts/promtail
-            chart: 'promtail',
-            repo: 'grafana',
-            namespace: args.namespace,
-            version: '3.8.2',
-            values: {
-                config: {
-                    lokiAddress: `http://${name}-loki:3100/loki/api/v1/push`,
-                    snippets: {
-                        extraScrapeConfigs: extraScrapeConfigs,
-                        pipelineStages: [
-                            {
-                                docker: {},
-                            },
-                            {
-                                match: {
-                                    selector: '{app="eventrouter"}',
-                                    stages: [
-                                        {
-                                            json: {
-                                                expressions: {
-                                                    namespace: 'event.metadata.namespace'
+        new k8s.helm.v3.Chart(
+            `${name}-promtail`,
+            {
+                // https://github.com/grafana/helm-charts/tree/main/charts/promtail
+                chart: 'promtail',
+                repo: 'grafana',
+                namespace: args.namespace,
+                version: '3.8.2',
+                values: {
+                    config: {
+                        lokiAddress: `http://${name}-loki:3100/loki/api/v1/push`,
+                        snippets: {
+                            extraScrapeConfigs: extraScrapeConfigs,
+                            pipelineStages: [
+                                {
+                                    docker: {}
+                                },
+                                {
+                                    match: {
+                                        selector: '{app="eventrouter"}',
+                                        stages: [
+                                            {
+                                                json: {
+                                                    expressions: {
+                                                        namespace: 'event.metadata.namespace'
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                labels: {
+                                                    namespace: ''
                                                 }
                                             }
-                                        },
-                                        {
-                                            labels:{
-                                                namespace: ""
-                                            }
-                                        }
-                                    ]
+                                        ]
+                                    }
                                 }
-                            }
-                        ]
-                    }
-                },
-                extraVolumes: [
-                    {
-                        name: 'journal',
-                        hostPath: {
-                            path: '/var/log/journal'
+                            ]
                         }
-                    }
-                ],
-                extraVolumeMounts: [
-                    {
-                        name: 'journal',
-                        mountPath: '/var/log/journal',
-                        readOnly: true
-                    }
-                ]
-            }
-        })
+                    },
+                    extraVolumes: [
+                        {
+                            name: 'journal',
+                            hostPath: {
+                                path: '/var/log/journal'
+                            }
+                        }
+                    ],
+                    extraVolumeMounts: [
+                        {
+                            name: 'journal',
+                            mountPath: '/var/log/journal',
+                            readOnly: true
+                        }
+                    ]
+                }
+            },
+            { ...opts, parent: args.cluster }
+        )
     }
 }
