@@ -44,6 +44,16 @@ export class Deployment extends k8s.helm.v3.Chart {
                             apiVersion: 1,
                             datasources: datasources
                         }
+                    },
+                    resources: {
+                        limits: {
+                            cpu: args.resources.cpu,
+                            memory: args.resources.memory
+                        },
+                        requests: {
+                            cpu: args.resources.cpu,
+                            memory: args.resources.memory
+                        }
                     }
                 }
             },
