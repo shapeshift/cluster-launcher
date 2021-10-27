@@ -8,6 +8,16 @@ export interface deploymentArgs {
     persistentVolume: boolean
     pvSize: string
     retentionPeriod: string
+    resources: {
+        loki: {
+            cpu: string
+            memory: string
+        }
+        promtail: {
+            cpu: string
+            memory: string
+        }
+    }
 }
 
 export class Deployment extends pulumi.ComponentResource {
@@ -45,7 +55,30 @@ export class Deployment extends pulumi.ComponentResource {
                     persistence: {
                         enabled: args.persistentVolume,
                         size: args.pvSize
-                    }
+                    },
+                    resources: {
+                        limits: {
+                            cpu: args.resources.loki.cpu,
+                            memory: args.resources.loki.memory
+                        },
+                        requests: {
+                            cpu: args.resources.loki.cpu,
+                            memory: args.resources.loki.memory
+                        }
+                    },
+                    // Work around ro-filesystem issue (https://github.com/grafana/helm-charts/issues/609)
+                    extraVolumes: [
+                        {
+                            name: 'temp',
+                            emptyDir: {}
+                        }
+                    ],
+                    extraVolumeMounts: [
+                        {
+                            name: 'temp',
+                            mountPath: '/tmp'
+                        }
+                    ]
                 }
             },
             { ...opts, parent: args.cluster }
@@ -101,6 +134,16 @@ export class Deployment extends pulumi.ComponentResource {
                                     }
                                 }
                             ]
+                        }
+                    },
+                    resources: {
+                        limits: {
+                            cpu: args.resources.promtail.cpu,
+                            memory: args.resources.promtail.memory
+                        },
+                        requests: {
+                            cpu: args.resources.promtail.cpu,
+                            memory: args.resources.promtail.memory
                         }
                     },
                     extraVolumes: [
