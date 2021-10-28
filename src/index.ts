@@ -61,6 +61,19 @@ export interface EKSClusterLauncherArgs {
             }
         }
     }
+    /** nodeTerminationHandler - monitors ec2 instance metadata to drain kubernetes nodes before they are removed
+     *
+     * __default__: { enabled: true, spotInterruptionDraining: true, rebalanceDraining: false, scheduledEventDraining: false, prometheusServer: false, emitKubernetesEvents: false}
+     * Ref: https://github.com/aws/aws-node-termination-handler/tree/main/config/helm/aws-node-termination-handler
+     */
+    nodeTerminationHandler: {
+        enabled: boolean
+        spotInterruptionDraining: boolean
+        rebalanceDraining: boolean
+        scheduledEventDraining: boolean
+        prometheusServer: boolean
+        emitKubernetesEvents: boolean
+    }
     /** profile is the local profile to use configured in ~/.aws/credentials file
      *
      * __default__: 'default'
@@ -125,10 +138,12 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
 
         const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'instanceTypes' | 'email'>> = {
             allAZs: false,
-            profile: 'default',
-            region: 'us-east-1',
+            autoscaling: {
+                enabled: false,
+                maxInstances: 3,
+                minInstances: 1
+            },
             cidrBlock: '10.0.0.0/16',
-            numInstancesPerAZ: 1,
             logging: {
                 enabled: false,
                 persistentVolume: false,
@@ -149,11 +164,17 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     }
                 }
             },
-            autoscaling: {
-                enabled: false,
-                maxInstances: 3,
-                minInstances: 1
+            nodeTerminationHandler: {
+                enabled: true,
+                spotInterruptionDraining: true,
+                rebalanceDraining: false,
+                scheduledEventDraining: false,
+                prometheusServer: false,
+                emitKubernetesEvents: false
             },
+            numInstancesPerAZ: 1,
+            profile: 'default',
+            region: 'us-east-1',
             traefik: {
                 whitelist: [],
                 replicas: 3,
@@ -165,8 +186,15 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         }
 
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
+            allAZs: args.allAZs ?? defaults.allAZs,
+            autoscaling: {
+                enabled: args.autoscaling?.enabled ?? defaults.autoscaling.enabled,
+                maxInstances: args.autoscaling?.maxInstances ?? defaults.autoscaling.maxInstances,
+                minInstances: args.autoscaling?.minInstances ?? defaults.autoscaling.minInstances
+            },
+            cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
+            email: args.email,
             instanceTypes: args.instanceTypes,
-            rootDomainName: args.rootDomainName,
             logging: {
                 enabled: args.logging?.enabled ?? defaults.logging.enabled,
                 persistentVolume: args.logging?.persistentVolume ?? defaults.logging.persistentVolume,
@@ -178,17 +206,18 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     promtail: args.logging?.resources?.promtail ?? defaults.logging.resources.promtail
                 }
             },
-            allAZs: args.allAZs ?? defaults.allAZs,
+            nodeTerminationHandler: {
+                enabled: args.nodeTerminationHandler.enabled ?? defaults.nodeTerminationHandler.enabled,
+                spotInterruptionDraining: args.nodeTerminationHandler.spotInterruptionDraining ?? defaults.nodeTerminationHandler.spotInterruptionDraining,
+                rebalanceDraining: args.nodeTerminationHandler.rebalanceDraining ?? defaults.nodeTerminationHandler.rebalanceDraining,
+                scheduledEventDraining: args.nodeTerminationHandler.scheduledEventDraining ?? defaults.nodeTerminationHandler.scheduledEventDraining,
+                prometheusServer: args.nodeTerminationHandler.prometheusServer ?? defaults.nodeTerminationHandler.prometheusServer,
+                emitKubernetesEvents: args.nodeTerminationHandler.emitKubernetesEvents ?? defaults.nodeTerminationHandler.emitKubernetesEvents
+            },
+            numInstancesPerAZ: args.numInstancesPerAZ ?? defaults.numInstancesPerAZ,
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
-            cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
-            numInstancesPerAZ: args.numInstancesPerAZ ?? defaults.numInstancesPerAZ,
-            autoscaling: {
-                enabled: args.autoscaling?.enabled ?? defaults.autoscaling.enabled,
-                maxInstances: args.autoscaling?.maxInstances ?? defaults.autoscaling.maxInstances,
-                minInstances: args.autoscaling?.minInstances ?? defaults.autoscaling.minInstances
-            },
-            email: args.email,
+            rootDomainName: args.rootDomainName,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
                 replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
@@ -273,14 +302,23 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: awsProvider }
         )
 
-        new nodeTerminationHandler.Deployment(
-            name,
-            {
-                cluster: cluster,
-                namespace: namespace
-            },
-            { ...opts, provider: k8sProvider }
-        )
+        if (argsWithDefaults.nodeTerminationHandler.enabled) {
+            new nodeTerminationHandler.Deployment(
+                name,
+                {
+                    cluster: cluster,
+                    namespace: namespace,
+                    events: {
+                        spotInterruptionDraining: argsWithDefaults.nodeTerminationHandler.spotInterruptionDraining,
+                        rebalanceDraining: argsWithDefaults.nodeTerminationHandler.rebalanceDraining,
+                        scheduledEventDraining: argsWithDefaults.nodeTerminationHandler.scheduledEventDraining
+                    },
+                    enablePrometheusServer: argsWithDefaults.nodeTerminationHandler.prometheusServer,
+                    emitKubernetesEvents: argsWithDefaults.nodeTerminationHandler.emitKubernetesEvents
+                },
+                { ...opts, provider: k8sProvider }
+            )
+        }
 
         if (argsWithDefaults.logging.enabled) {
             new loki.Deployment(
