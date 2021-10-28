@@ -5,6 +5,13 @@ import { Cluster } from '@pulumi/eks'
 export interface deploymentArgs {
     namespace: pulumi.Input<string>
     cluster: Cluster
+    events: {
+        spotInterruptionDraining: boolean
+        rebalanceDraining: boolean
+        scheduledEventDraining: boolean
+    }
+    enablePrometheusServer: boolean
+    emitKubernetesEvents: boolean
 }
 
 export class Deployment extends k8s.helm.v3.Chart {
@@ -18,13 +25,13 @@ export class Deployment extends k8s.helm.v3.Chart {
                 namespace: args.namespace,
                 version: '0.15.3',
                 values: {
-                    enableSpotInterruptionDraining: 'true',
-                    enableRebalanceDraining: 'false',
-                    enableScheduledEventDraining: 'false', //Experimental feature
+                    enableSpotInterruptionDraining: args.events.spotInterruptionDraining,
+                    enableRebalanceDraining: args.events.rebalanceDraining,
+                    enableScheduledEventDraining: args.events.scheduledEventDraining, //Experimental feature
                     podTerminationGracePeriod: '-1', //If negative, use value defined in pod
                     nodeTerminationGracePeriod: '120',
-                    enablePrometheusServer: 'false', //For later use
-                    emitKubernetesEvents: 'false' //For later use
+                    enablePrometheusServer: args.enablePrometheusServer,
+                    emitKubernetesEvents: args.emitKubernetesEvents
                 }
             },
             { ...opts, parent: args.cluster }
