@@ -6,6 +6,7 @@ export const deploy = (
     namespace: string,
     dnsZone: string,
     region: string,
+    logging?: boolean,
     email?: string,
     opts?: pulumi.ComponentResourceOptions
 ) => {
@@ -20,6 +21,14 @@ export const deploy = (
         { file: `${__dirname}/metrics-server.yaml` },
         opts
     )
+
+    if (logging){
+        const eventRouter = new k8s.yaml.ConfigFile(
+            'event-router',
+            { file: `${__dirname}/event-router.yaml` },
+            opts
+        )
+    }
 
     //Also Issuer for ACME using lets encrypt
     new certmanager.v1.ClusterIssuer(
