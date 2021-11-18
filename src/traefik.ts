@@ -122,7 +122,11 @@ export class Deployment extends k8s.helm.v3.Chart {
                         minAvailable: 2
                     },
                     deployment: {
-                        replicas: args.replicas
+                        replicas: args.replicas,
+                        podAnnotations: {
+                            'prometheus.io/port': '9100',
+                            'prometheus.io/scrape': 'true'
+                        }
                     }
                 },
                 transformations: [

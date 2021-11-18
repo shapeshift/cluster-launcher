@@ -34,6 +34,10 @@ export class Deployment extends k8s.helm.v3.Chart {
                         'skip-nodes-with-system-pods': false,
                         'max-graceful-termination-sec': '600' //Amount of time to allow a pod to terminate before killing
                     },
+                    podAnnotations: {
+                        'prometheus.io/port':'8085',
+                        'prometheus.io/scrape':'true',
+                    },
                     resources: {
                         limits: {
                             cpu: '300m',
