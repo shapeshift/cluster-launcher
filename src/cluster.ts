@@ -3,6 +3,7 @@ import * as awsx from '@pulumi/awsx'
 import * as eks from '@pulumi/eks'
 import * as pulumi from '@pulumi/pulumi'
 import { ComponentResourceOptions } from '@pulumi/pulumi'
+import { nodeGroups } from '.'
 
 export type ComponentResourceOptionsWithProvider = ComponentResourceOptions & {
     provider: aws.Provider
@@ -10,13 +11,8 @@ export type ComponentResourceOptionsWithProvider = ComponentResourceOptions & {
 
 interface ClusterArgs {
     vpc: awsx.ec2.Vpc
-    instanceTypes: aws.ec2.InstanceType[]
-    numberOfInstancesPerAz: number
-    autoscaling: {
-        minInstances: number
-        maxInstances: number
-    },
-    enabledClusterAutoscaler: boolean
+    nodeGroups: nodeGroups[]
+    clusterAutoscaler: boolean
 }
 
 export default async function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
@@ -72,48 +68,53 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         { ...opts, parent: cluster }
     )
 
-    privateSubnets.forEach(({ subnet }, index) => {
-        new eks.ManagedNodeGroup(
-            `${name}-${index}`,
-            {
-                cluster: cluster,
-                instanceTypes: args.instanceTypes,
-                capacityType: 'SPOT',
-                subnetIds: [subnet.id],
-                nodeRole: cluster.instanceRoles[0],
-                scalingConfig: {
-                    maxSize: args.autoscaling.maxInstances,
-                    minSize: args.autoscaling.minInstances,
-                    desiredSize: args.numberOfInstancesPerAz
-                },
-                tags: {
-                    Name: `${name}-eks-worker`,
-                    ...tags
-                },
-                launchTemplate: {
-                    version: pulumi.interpolate`${launchTemplates.latestVersion}`,
-                    name: launchTemplates.name
-                }
-            },
-            {
-                ...opts,
-                parent: launchTemplates,
-                transformations: [
-                    manifest => {
-                        // This is to ignore scaling config in case of cluster-autoscaler because it sets desiredSize
-                        if (manifest.type === 'aws:eks/nodeGroup:NodeGroup' && args.enabledClusterAutoscaler) {
-                            return {
-                                props: manifest.props,
-                                opts: pulumi.mergeOptions(manifest.opts, {
-                                    ignoreChanges: ['scalingConfig.desiredSize']
-                                })
-                            }
-                        }
-                        return
+    args.nodeGroups.forEach( nodeGroup => {
+        privateSubnets.forEach(({ subnet }, index) => {
+            new eks.ManagedNodeGroup(
+                `${name}-${index}-${nodeGroup.name}`,
+                {
+                    cluster: cluster,
+                    instanceTypes: nodeGroup.instanceTypes,
+                    capacityType: nodeGroup.type,
+                    subnetIds: [subnet.id],
+                    nodeRole: cluster.instanceRoles[0],
+                    labels: {
+                        'nodeGroup': `${name}-${nodeGroup.name}`
+                    },
+                    scalingConfig: {
+                        maxSize: nodeGroup.maxSize,
+                        minSize: nodeGroup.minSize,
+                        desiredSize: nodeGroup.desired
+                    },
+                    tags: {
+                        Name: `${name}-${nodeGroup.name}-eks-worker`,
+                        ...tags
+                    },
+                    launchTemplate: {
+                        version: pulumi.interpolate`${launchTemplates.latestVersion}`,
+                        name: launchTemplates.name
                     }
-                ]
-            }
-        )
+                },
+                {
+                    ...opts,
+                    parent: launchTemplates,
+                    transformations: [
+                        manifest => {
+                            // This is to ignore scaling config in case of cluster-autoscaler because it sets desiredSize
+                            if (manifest.type === 'aws:eks/nodeGroup:NodeGroup' && args.clusterAutoscaler) {
+                                return {
+                                    props: manifest.props,
+                                    opts: pulumi.mergeOptions(manifest.opts, {
+                                        ignoreChanges: ['scalingConfig.desiredSize']
+                                    })
+                                }
+                            }
+                            return
+                        }
+                    ]
+                }
+            )
+        })
     })
 
     return { kubeconfig: cluster.getKubeconfig({ profileName }), cluster }
