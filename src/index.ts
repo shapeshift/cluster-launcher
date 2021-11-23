@@ -14,22 +14,53 @@ import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
 
+export interface nodeGroups {
+    /**
+     * User specified node group name
+     * This name will be used to create node labels for targeting workloads
+     *
+     * Node label format: 'nodeGroup':'<clusterName>-<nodeGroup.name>'
+     *
+     * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+     */
+    name: string
+    instanceTypes: aws.ec2.InstanceType[]
+    /**
+     *  Node group capacity type, valid values are `SPOT` and `ON_DEMAND` https://www.pulumi.com/registry/packages/eks/api-docs/managednodegroup/#capacitytype_nodejs
+     */
+    type: string
+    /**
+     * __default__: 1
+     */
+    minSize: number
+    /**
+     * __default__: 3
+     */
+    maxSize: number
+    /**
+     * __default__: 1
+     * If cluster autoscaling is enabled modifying this value on an existing node group will have no impact
+     */
+    desired: number
+}
+
 export interface EKSClusterLauncherArgs {
     /** rootDomainName is the public dns name to configure external-dns and cert manager with */
     rootDomainName: string
-    /** instanceTypes is a list of instance types for the kublets https://aws.amazon.com/ec2/spot/pricing/ */
-    instanceTypes: aws.ec2.InstanceType[]
-    /** numInstancesPerAZ specify the desired number of instances you want per AZ, if using a cluster-autoscaler this is irrelevant*/
-    numInstancesPerAZ?: number
+     /**
+     * nodeGroups is a list of EKS managed node groups that will be created
+     * __default__: { name: 'default', type: 'SPOT', minSize: 1, maxSize: 3, desired: 1, instanceTypes: ['r5.large', 'r5a.large', 'r5b.large', 'r5n.large']} 
+     * This name will be used to create node labels for targeting workloads
+     * Node label format: 'nodeGroup':'<clusterName>-<nodeGroup.name>'
+     *
+     * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+     */
+    nodeGroups: nodeGroups[]
     /** autoscaling configures min and maximum number of instances to run per AZ
      *
-     * __default__: { minInstances: 1, maxInstances: 3 }
+     * __default__: false
      */
-    autoscaling?: {
-        enabled: boolean
-        minInstances: number
-        maxInstances: number
-    }
+    autoscaling?: boolean
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
      * __default__: false
@@ -123,12 +154,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             [P in keyof T]-?: DeepRequired<T[P]>
         }
 
-        const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'instanceTypes' | 'email'>> = {
+        const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'email' | 'nodeGroups' >> = {
             allAZs: false,
             profile: 'default',
             region: 'us-east-1',
             cidrBlock: '10.0.0.0/16',
-            numInstancesPerAZ: 1,
             logging: {
                 enabled: false,
                 persistentVolume: false,
@@ -149,11 +179,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     }
                 }
             },
-            autoscaling: {
-                enabled: false,
-                maxInstances: 3,
-                minInstances: 1
-            },
+            autoscaling: false,
             traefik: {
                 whitelist: [],
                 replicas: 3,
@@ -165,7 +191,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         }
 
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
-            instanceTypes: args.instanceTypes,
+            nodeGroups: args.nodeGroups,
             rootDomainName: args.rootDomainName,
             logging: {
                 enabled: args.logging?.enabled ?? defaults.logging.enabled,
@@ -182,12 +208,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
             cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
-            numInstancesPerAZ: args.numInstancesPerAZ ?? defaults.numInstancesPerAZ,
-            autoscaling: {
-                enabled: args.autoscaling?.enabled ?? defaults.autoscaling.enabled,
-                maxInstances: args.autoscaling?.maxInstances ?? defaults.autoscaling.maxInstances,
-                minInstances: args.autoscaling?.minInstances ?? defaults.autoscaling.minInstances
-            },
+            autoscaling: args.autoscaling ?? defaults.autoscaling,
             email: args.email,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
@@ -219,11 +240,9 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const { kubeconfig, cluster } = await createCluster(
             name,
             {
-                autoscaling: argsWithDefaults.autoscaling,
                 vpc,
-                enabledClusterAutoscaler: argsWithDefaults.autoscaling.enabled,
-                instanceTypes: argsWithDefaults.instanceTypes,
-                numberOfInstancesPerAz: argsWithDefaults.numInstancesPerAZ
+                clusterAutoscaler: argsWithDefaults.autoscaling,
+                nodeGroups: argsWithDefaults.nodeGroups,
             },
             {
                 ...opts,
@@ -321,7 +340,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             opts
         )
 
-        if (argsWithDefaults.autoscaling.enabled)
+        if (argsWithDefaults.autoscaling)
             new autoscaler.Deployment(
                 name,
                 {
