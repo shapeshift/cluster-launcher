@@ -1,6 +1,6 @@
 {
     "name": "@shapeshiftoss/cluster-launcher",
-    "version": "0.6.9",
+    "version": "0.7.0",
     "license": "MIT",
     "main": "dist/index.js",
     "source": "src/index.ts",
