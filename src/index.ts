@@ -136,6 +136,14 @@ export interface EKSClusterLauncherArgs {
             cpu: string
             memory: string
         }
+        /** if autoscaling is enabled, a horizontal pod autoscaler will be deployed
+         * __default__ : { enabled: false, cpuThreshold: 30, maxReplicas: 5 }
+         */
+        autoscaling?: {
+            enabled: boolean
+            cpuThreshold: number
+            maxReplicas: number
+        }
     }
 }
 
@@ -186,6 +194,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 resources: {
                     cpu: '300m',
                     memory: '256Mi'
+                },
+                autoscaling: {
+                    enabled: false,
+                    cpuThreshold: 30,
+                    maxReplicas: 5
                 }
             }
         }
@@ -213,7 +226,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
                 replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
-                resources: args.traefik?.resources ?? defaults.traefik.resources
+                resources: args.traefik?.resources ?? defaults.traefik.resources,
+                autoscaling: args.traefik?.autoscaling ?? defaults.traefik.autoscaling
             }
         }
 
@@ -281,7 +295,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 replicas: argsWithDefaults.traefik.replicas,
                 resources: argsWithDefaults.traefik.resources,
                 whitelist: argsWithDefaults.traefik.whitelist,
-                privateCidr: argsWithDefaults.cidrBlock
+                privateCidr: argsWithDefaults.cidrBlock,
+                autoscaling: argsWithDefaults.traefik.autoscaling
             },
             { ...opts, provider: k8sProvider }
         )
