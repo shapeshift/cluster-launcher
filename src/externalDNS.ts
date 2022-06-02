@@ -7,7 +7,7 @@ export interface dnsControllerArgs {
     zone: aws.route53.Zone
     cluster: Cluster
     namespace: pulumi.Input<string>
-    providers: { aws: aws.Provider, k8s: k8s.Provider }
+    providers: { aws: aws.Provider; k8s: k8s.Provider }
 }
 
 // Requires cert manager to be present beforehand
@@ -20,7 +20,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'external-dns',
                 transformations: [(manifest: any) => (manifest.metadata.namespace = args.namespace)],
                 namespace: args.namespace,
-                version: '5.4.0',
+                version: '6.1.0',
                 values: {
                     resources: {
                         limits: {
