@@ -1,6 +1,6 @@
 {
     "name": "@shapeshiftoss/cluster-launcher",
-    "version": "0.8.1",
+    "version": "0.8.2",
     "license": "MIT",
     "main": "dist/index.js",
     "source": "src/index.ts",
@@ -16,7 +16,7 @@
         "@pulumi/aws": "5.8.0",
         "@pulumi/awsx": "0.40.0",
         "@pulumi/eks": "0.40.0",
-        "@pulumi/kubernetes": "^3.19.3",
+        "@pulumi/kubernetes": "3.19.3",
         "@pulumi/kubernetesx": "0.1.6",
         "@pulumi/pulumi": "3.34.0"
     },
