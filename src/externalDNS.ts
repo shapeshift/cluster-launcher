@@ -20,7 +20,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'external-dns',
                 transformations: [(manifest: any) => (manifest.metadata.namespace = args.namespace)],
                 namespace: args.namespace,
-                version: '6.1.0',
+                version: '6.12.2',
                 values: {
                     resources: {
                         limits: {
