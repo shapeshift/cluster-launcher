@@ -95,24 +95,7 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
                         name: launchTemplates.name
                     }
                 },
-                {
-                    ...opts,
-                    parent: launchTemplates,
-                    transformations: [
-                        manifest => {
-                            // This is to ignore scaling config in case of cluster-autoscaler because it sets desiredSize
-                            if (manifest.type === 'aws:eks/nodeGroup:NodeGroup' && args.clusterAutoscaler) {
-                                return {
-                                    props: manifest.props,
-                                    opts: pulumi.mergeOptions(manifest.opts, {
-                                        ignoreChanges: ['scalingConfig.desiredSize']
-                                    })
-                                }
-                            }
-                            return
-                        }
-                    ]
-                }
+                { ...opts, parent: launchTemplates }
             )
         })
     })
