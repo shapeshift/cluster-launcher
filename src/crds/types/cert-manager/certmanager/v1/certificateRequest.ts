@@ -2,7 +2,8 @@
 // *** Do not edit by hand unless you're certain you know what you are doing! ***
 
 import * as pulumi from "@pulumi/pulumi";
-import { input as inputs, output as outputs } from "../../types";
+import * as inputs from "../../types/input";
+import * as outputs from "../../types/output";
 import * as utilities from "../../utilities";
 
 import {ObjectMeta} from "../../meta/v1";
@@ -59,25 +60,23 @@ export class CertificateRequest extends pulumi.CustomResource {
      * @param opts A bag of options that control this resource's behavior.
      */
     constructor(name: string, args?: CertificateRequestArgs, opts?: pulumi.CustomResourceOptions) {
-        let inputs: pulumi.Inputs = {};
+        let resourceInputs: pulumi.Inputs = {};
         opts = opts || {};
         if (!opts.id) {
-            inputs["apiVersion"] = "cert-manager.io/v1";
-            inputs["kind"] = "CertificateRequest";
-            inputs["metadata"] = args ? args.metadata : undefined;
-            inputs["spec"] = args ? args.spec : undefined;
-            inputs["status"] = args ? args.status : undefined;
+            resourceInputs["apiVersion"] = "cert-manager.io/v1";
+            resourceInputs["kind"] = "CertificateRequest";
+            resourceInputs["metadata"] = args ? args.metadata : undefined;
+            resourceInputs["spec"] = args ? args.spec : undefined;
+            resourceInputs["status"] = args ? args.status : undefined;
         } else {
-            inputs["apiVersion"] = undefined /*out*/;
-            inputs["kind"] = undefined /*out*/;
-            inputs["metadata"] = undefined /*out*/;
-            inputs["spec"] = undefined /*out*/;
-            inputs["status"] = undefined /*out*/;
+            resourceInputs["apiVersion"] = undefined /*out*/;
+            resourceInputs["kind"] = undefined /*out*/;
+            resourceInputs["metadata"] = undefined /*out*/;
+            resourceInputs["spec"] = undefined /*out*/;
+            resourceInputs["status"] = undefined /*out*/;
         }
-        if (!opts.version) {
-            opts = pulumi.mergeOptions(opts, { version: utilities.getVersion()});
-        }
-        super(CertificateRequest.__pulumiType, name, inputs, opts);
+        opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
+        super(CertificateRequest.__pulumiType, name, resourceInputs, opts);
     }
 }
 
@@ -85,15 +84,15 @@ export class CertificateRequest extends pulumi.CustomResource {
  * The set of arguments for constructing a CertificateRequest resource.
  */
 export interface CertificateRequestArgs {
-    readonly apiVersion?: pulumi.Input<"cert-manager.io/v1">;
-    readonly kind?: pulumi.Input<"CertificateRequest">;
-    readonly metadata?: pulumi.Input<ObjectMeta>;
+    apiVersion?: pulumi.Input<"cert-manager.io/v1">;
+    kind?: pulumi.Input<"CertificateRequest">;
+    metadata?: pulumi.Input<ObjectMeta>;
     /**
      * Desired state of the CertificateRequest resource.
      */
-    readonly spec?: pulumi.Input<inputs.certmanager.v1.CertificateRequestSpecArgs>;
+    spec?: pulumi.Input<inputs.certmanager.v1.CertificateRequestSpecArgs>;
     /**
      * Status of the CertificateRequest. This is set and managed automatically.
      */
-    readonly status?: pulumi.Input<inputs.certmanager.v1.CertificateRequestStatusArgs>;
+    status?: pulumi.Input<inputs.certmanager.v1.CertificateRequestStatusArgs>;
 }

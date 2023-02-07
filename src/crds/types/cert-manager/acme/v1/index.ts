@@ -5,12 +5,16 @@ import * as pulumi from "@pulumi/pulumi";
 import * as utilities from "../../utilities";
 
 // Export members:
-export * from "./challenge";
-export * from "./order";
+export { ChallengeArgs } from "./challenge";
+export type Challenge = import("./challenge").Challenge;
+export const Challenge: typeof import("./challenge").Challenge = null as any;
+utilities.lazyLoad(exports, ["Challenge"], () => require("./challenge"));
 
-// Import resources to register:
-import { Challenge } from "./challenge";
-import { Order } from "./order";
+export { OrderArgs } from "./order";
+export type Order = import("./order").Order;
+export const Order: typeof import("./order").Order = null as any;
+utilities.lazyLoad(exports, ["Order"], () => require("./order"));
+
 
 const _module = {
     version: utilities.getVersion(),

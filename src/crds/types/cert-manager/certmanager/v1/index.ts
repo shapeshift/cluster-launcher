@@ -5,16 +5,26 @@ import * as pulumi from "@pulumi/pulumi";
 import * as utilities from "../../utilities";
 
 // Export members:
-export * from "./certificate";
-export * from "./certificateRequest";
-export * from "./clusterIssuer";
-export * from "./issuer";
+export { CertificateArgs } from "./certificate";
+export type Certificate = import("./certificate").Certificate;
+export const Certificate: typeof import("./certificate").Certificate = null as any;
+utilities.lazyLoad(exports, ["Certificate"], () => require("./certificate"));
 
-// Import resources to register:
-import { Certificate } from "./certificate";
-import { CertificateRequest } from "./certificateRequest";
-import { ClusterIssuer } from "./clusterIssuer";
-import { Issuer } from "./issuer";
+export { CertificateRequestArgs } from "./certificateRequest";
+export type CertificateRequest = import("./certificateRequest").CertificateRequest;
+export const CertificateRequest: typeof import("./certificateRequest").CertificateRequest = null as any;
+utilities.lazyLoad(exports, ["CertificateRequest"], () => require("./certificateRequest"));
+
+export { ClusterIssuerArgs } from "./clusterIssuer";
+export type ClusterIssuer = import("./clusterIssuer").ClusterIssuer;
+export const ClusterIssuer: typeof import("./clusterIssuer").ClusterIssuer = null as any;
+utilities.lazyLoad(exports, ["ClusterIssuer"], () => require("./clusterIssuer"));
+
+export { IssuerArgs } from "./issuer";
+export type Issuer = import("./issuer").Issuer;
+export const Issuer: typeof import("./issuer").Issuer = null as any;
+utilities.lazyLoad(exports, ["Issuer"], () => require("./issuer"));
+
 
 const _module = {
     version: utilities.getVersion(),
