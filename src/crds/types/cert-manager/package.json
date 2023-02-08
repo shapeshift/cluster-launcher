@@ -2,12 +2,17 @@
     "name": "@pulumi/cert-manager-crd",
     "version": "1.0.0",
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "install": "node scripts/install-pulumi-plugin.js resource crds "
+    },
+    "devDependencies": {
+        "typescript": "^4.3.5"
     },
     "peerDependencies": {
         "@pulumi/pulumi": "latest"
     },
     "pulumi": {
-        "resource": true
+        "resource": true,
+        "name": "crds"
     }
 }
