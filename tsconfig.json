@@ -34,5 +34,6 @@
         /* Experimental Features */
         "experimentalDecorators": true
     },
-    "include": ["src", "src/crds/**/*.json"]
+    "include": ["src", "src/crds/**/*.json"],
+    "exclude": ["node_modules"]
 }

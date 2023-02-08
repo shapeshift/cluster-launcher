@@ -16,15 +16,15 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'aws-node-termination-handler',
                 repo: 'eks',
                 namespace: args.namespace,
-                version: '0.15.3',
+                version: '0.21.0',
                 values: {
                     enableSpotInterruptionDraining: 'true',
                     enableRebalanceDraining: 'false',
-                    enableScheduledEventDraining: 'false', //Experimental feature
-                    podTerminationGracePeriod: '-1', //If negative, use value defined in pod
+                    enableScheduledEventDraining: 'false', // Experimental feature
+                    podTerminationGracePeriod: '-1', //  If negative, the default value specified in the pod will be used
                     nodeTerminationGracePeriod: '120',
-                    enablePrometheusServer: 'false', //For later use
-                    emitKubernetesEvents: 'false' //For later use
+                    enablePrometheusServer: 'false',
+                    emitKubernetesEvents: 'true'
                 }
             },
             { ...opts, parent: args.cluster }

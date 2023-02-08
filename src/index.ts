@@ -231,7 +231,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 cidrBlock: argsWithDefaults.cidrBlock,
-                numberOfAvailabilityZones: argsWithDefaults.allAZs ? 'all' : 2,
+                numberOfAvailabilityZones: argsWithDefaults.allAZs ? 3 : 2,
                 tags: { Name: name, iac: `pulumi-${name}` }
             },
             { provider: awsProvider }

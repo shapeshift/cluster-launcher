@@ -18,21 +18,20 @@ interface ClusterArgs {
 export default async function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
     const tags = { iac: `pulumi-${name}` }
 
-    const privateSubnets = await args.vpc.privateSubnets
-    const publicSubnetIds = await args.vpc.publicSubnetIds
-    const privateSubnetIds = await args.vpc.privateSubnetIds
+    const subnetIds = pulumi.all([args.vpc.privateSubnetIds, args.vpc.publicSubnetIds])
+        .apply(([privateSubnetIds, publicSubnetIds]) => [...privateSubnetIds, ...publicSubnetIds])
 
     const profileName = opts.provider.profile as pulumi.Output<string>
 
     const cluster = new eks.Cluster(
         name,
         {
-            vpcId: args.vpc.id,
+            vpcId: args.vpc.vpcId,
             skipDefaultNodeGroup: true,
             maxSize: 0, // We are using SPOT instance managed node groups instead
             minSize: 0, // We are using SPOT instance managed node groups instead
             desiredCapacity: 0, // We are using SPOT instance managed node groups instead
-            subnetIds: [...publicSubnetIds, ...privateSubnetIds],
+            subnetIds,
             providerCredentialOpts: { profileName },
 
             tags
@@ -68,35 +67,38 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         { ...opts, parent: cluster }
     )
 
-    args.nodeGroups.forEach( nodeGroup => {
-        privateSubnets.forEach(({ subnet }, index) => {
-            new eks.ManagedNodeGroup(
-                `${name}-${index}-${nodeGroup.name}`,
-                {
-                    cluster: cluster,
-                    instanceTypes: nodeGroup.instanceTypes,
-                    capacityType: nodeGroup.type,
-                    subnetIds: [subnet.id],
-                    nodeRole: cluster.instanceRoles[0],
-                    labels: {
-                        'nodeGroup': `${name}-${nodeGroup.name}`
+    args.nodeGroups.forEach(nodeGroup => {
+        args.vpc.privateSubnetIds.apply(ids => {
+            ids.forEach((id, index) => {
+                new eks.ManagedNodeGroup(
+                    `${name}-${index}-${nodeGroup.name}`,
+                    {
+                        cluster: cluster,
+                        instanceTypes: nodeGroup.instanceTypes,
+                        capacityType: nodeGroup.type,
+                        subnetIds: [id],
+                        nodeRole: cluster.instanceRoles[0],
+                        labels: {
+                            'nodeGroup': `${name}-${nodeGroup.name}`
+                        },
+                        scalingConfig: {
+                            maxSize: nodeGroup.maxSize,
+                            minSize: nodeGroup.minSize,
+                            desiredSize: nodeGroup.desired
+                        },
+                        tags: {
+                            Name: `${name}-${nodeGroup.name}-eks-worker`,
+                            ...tags
+                        },
+                        launchTemplate: {
+                            version: pulumi.interpolate`${launchTemplates.latestVersion}`,
+                            name: launchTemplates.name
+                        }
                     },
-                    scalingConfig: {
-                        maxSize: nodeGroup.maxSize,
-                        minSize: nodeGroup.minSize,
-                        desiredSize: nodeGroup.desired
-                    },
-                    tags: {
-                        Name: `${name}-${nodeGroup.name}-eks-worker`,
-                        ...tags
-                    },
-                    launchTemplate: {
-                        version: pulumi.interpolate`${launchTemplates.latestVersion}`,
-                        name: launchTemplates.name
-                    }
-                },
-                { ...opts, parent: launchTemplates }
-            )
+                    { ...opts, parent: launchTemplates }
+                )
+
+            })
         })
     })
 

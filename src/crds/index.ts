@@ -16,14 +16,14 @@ export const deploy = (
         opts
     )
 
-    const metricsServer = new k8s.yaml.ConfigFile(
+    new k8s.yaml.ConfigFile(
         'metrics-server',
         { file: `${__dirname}/metrics-server.yaml` },
         opts
     )
 
-    if (logging){
-        const eventRouter = new k8s.yaml.ConfigFile(
+    if (logging) {
+        new k8s.yaml.ConfigFile(
             'event-router',
             { file: `${__dirname}/event-router.yaml` },
             opts
