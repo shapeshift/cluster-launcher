@@ -16,7 +16,7 @@ export interface ingressControllerArgs {
 // Requires cert manager to be present beforehand
 export class Deployment extends k8s.helm.v3.Chart {
     constructor(name: string, args: ingressControllerArgs, opts: pulumi.ComponentResourceOptions) {
-        let annotations: { [key: string]: pulumi.Output<string> | string } = {
+        const annotations: { [key: string]: pulumi.Output<string> | string } = {
             'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'http',
             'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '30',
             // This is for layer 4. It will forward ip through to traefik. THIS DOESN'T SUPPORT SECURITY GROUPS
@@ -31,7 +31,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'traefik',
                 repo: 'traefik',
                 namespace: args.namespace,
-                version: '10.9.1',
+                version: '20.8.0',
                 values: {
                     providers: {
                         kubernetesIngress: {

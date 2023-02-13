@@ -13,6 +13,7 @@ import * as grafana from './grafana'
 import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
+import * as ebsCSI from './ebsCSI'
 
 export interface nodeGroups {
     /**
@@ -231,7 +232,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 cidrBlock: argsWithDefaults.cidrBlock,
-                numberOfAvailabilityZones: argsWithDefaults.allAZs ? 'all' : 2,
+                numberOfAvailabilityZones: argsWithDefaults.allAZs ? 3 : 2,
                 tags: { Name: name, iac: `pulumi-${name}` }
             },
             { provider: awsProvider }
@@ -335,6 +336,16 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 cluster: cluster,
                 namespace,
                 zone: zone as unknown as aws.route53.Zone,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
+        )
+
+        new ebsCSI.Deployment(
+            name,
+            {
+                cluster: cluster,
+                namespace,
                 providers: { aws: awsProvider, k8s: k8sProvider }
             },
             opts

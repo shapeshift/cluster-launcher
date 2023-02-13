@@ -18,7 +18,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'cluster-autoscaler',
                 repo: 'autoscaler',
                 namespace: args.namespace,
-                version: '9.21.1',
+                version: '9.23.0',
                 values: {
                     autoDiscovery: {
                         clusterName: args.cluster.eksCluster.name
