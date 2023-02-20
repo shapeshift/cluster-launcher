@@ -138,6 +138,12 @@ export interface EKSClusterLauncherArgs {
             memory: string
         }
     }
+    /**
+     * volumeSize is size of an eks worker node ebs volume in gigabytes
+     *
+     * __default__: 20
+     */
+    volumeSize?: number
 }
 
 export class EKSClusterLauncher extends pulumi.ComponentResource {
@@ -188,7 +194,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     cpu: '300m',
                     memory: '256Mi'
                 }
-            }
+            },
+            volumeSize: 20
         }
 
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
@@ -215,7 +222,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
                 replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
                 resources: args.traefik?.resources ?? defaults.traefik.resources
-            }
+            },
+            volumeSize: args.volumeSize ?? defaults.volumeSize
         }
 
         const namespace = `${name}-infra`
@@ -244,11 +252,9 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 vpc,
                 clusterAutoscaler: argsWithDefaults.autoscaling,
                 nodeGroups: argsWithDefaults.nodeGroups,
+                volumeSize: argsWithDefaults.volumeSize,
             },
-            {
-                ...opts,
-                provider: awsProvider
-            }
+            { ...opts, provider: awsProvider }
         )
 
         const k8sProvider = new k8s.Provider(name, { kubeconfig }, { dependsOn: [cluster] })
@@ -269,10 +275,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             argsWithDefaults.region,
             argsWithDefaults.logging.enabled,
             argsWithDefaults.email,
-            {
-                ...opts,
-                provider: k8sProvider
-            }
+            { ...opts, provider: k8sProvider }
         )
 
         new traefik.Deployment(

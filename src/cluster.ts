@@ -13,6 +13,7 @@ interface ClusterArgs {
     vpc: awsx.ec2.Vpc
     nodeGroups: nodeGroups[]
     clusterAutoscaler: boolean
+    volumeSize: number
 }
 
 export default async function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
@@ -48,7 +49,7 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
                 {
                     ebs: {
                         deleteOnTermination: 'true',
-                        volumeSize: 20
+                        volumeSize: args.volumeSize
                     },
                     deviceName: '/dev/xvda'
                 }
