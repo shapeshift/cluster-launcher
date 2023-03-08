@@ -2,6 +2,7 @@ import * as aws from '@pulumi/aws'
 import * as awsx from '@pulumi/awsx'
 import * as eks from '@pulumi/eks'
 import * as k8s from '@pulumi/kubernetes'
+import * as kx from "@pulumi/kubernetesx";
 import * as pulumi from '@pulumi/pulumi'
 
 import * as externalDNS from './externalDNS'
@@ -14,6 +15,7 @@ import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
 import * as ebsCSI from './ebsCSI'
+import * as ebsSnapshotController from './ebsSnapshotController'
 
 export interface nodeGroups {
     /**
@@ -345,6 +347,16 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         )
 
         new ebsCSI.Deployment(
+            name,
+            {
+                cluster: cluster,
+                namespace,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
+        )
+
+        new ebsSnapshotController.Deployment(
             name,
             {
                 cluster: cluster,
