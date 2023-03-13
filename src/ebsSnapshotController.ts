@@ -20,19 +20,31 @@ export class Deployment extends k8s.helm.v3.Chart {
                 namespace: args.namespace,
                 version: '1.7.2',
                 values: {
+                    replicaCount: 3,
+                    resources: {
+                        limits: {
+                            cpu: '50m',
+                            memory: '100Mi'
+                        },
+                        requests: {
+                            cpu: '50m',
+                            memory: '100Mi'
+                        },
+                    },
+                    volumeSnapshotClasses: [
+                        {
+                            apiVersion: 'snapshot.storage.k8s.io/v1',
+                            kind: 'VolumeSnapshotClass',
+                            metadata: {
+                                name: 'csi-aws-vsc'
+                            },
+                            driver: 'ebs.csi.aws.com',
+                            deletionPolicy: 'Delete'
+                        }
+                    ]
                 }
             },
             { ...opts, provider: args.providers.k8s }
         )
-
-        new k8s.apiextensions.CustomResource('csi-aws-vsc', {
-            apiVersion: 'snapshot.storage.k8s.io/v1',
-            kind: 'VolumeSnapshotClass',
-            metadata: {
-                name: 'csi-aws-vsc'
-            },
-            driver: 'ebs.csi.aws.com',
-            deletionPolicy: 'Delete'
-        }, { parent: this, dependsOn: this })
     }
 }
