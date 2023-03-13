@@ -20,9 +20,6 @@ export class Deployment extends k8s.helm.v3.Chart {
                 namespace: args.namespace,
                 version: '1.7.2',
                 values: {
-                    controller: {
-                        region: args.providers.aws.region
-                    }
                 }
             },
             { ...opts, provider: args.providers.k8s }
