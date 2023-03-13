@@ -16,7 +16,7 @@ export class Deployment extends k8s.helm.v3.Chart {
         super(
             `${name}-snapshot-controller`,
             {
-                // https://github.com/piraeusdatastore/helm-charts
+                // https://github.com/piraeusdatastore/helm-charts/tree/main/charts/snapshot-controller
                 repo: 'piraeus-charts',
                 chart: 'snapshot-controller',
                 namespace: args.namespace,
