@@ -1,8 +1,6 @@
 import * as aws from '@pulumi/aws'
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
-import * as kubernetes from '@pulumi/kubernetes'
-
 import { Cluster } from '@pulumi/eks'
 
 interface Args {
