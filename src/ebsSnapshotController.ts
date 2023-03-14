@@ -25,11 +25,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                         limits: {
                             cpu: '50m',
                             memory: '100Mi'
-                        },
-                        requests: {
-                            cpu: '50m',
-                            memory: '100Mi'
-                        },
+                        }
                     },
                     volumeSnapshotClasses: [
                         {
