@@ -6,8 +6,20 @@ The cluster launcher is a pulumi package used to create an eks cluster. This is 
 
 -   [pulumi](https://www.pulumi.com/docs/index.html)
 -   [helm3](https://helm.sh/)
-    -   [traefik helm chart](https://doc.traefik.io/traefik/getting-started/install-traefik/#use-the-helm-chart)
-    -   [external-dns](https://artifacthub.io/packages/helm/bitnami/external-dns)
+
+### Helm setup
+
+The following charts must be added to your repo list:
+
+```
+helm repo add traefik https://traefik.github.io/charts
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+helm repo add piraeus-charts https://piraeus.io/helm-charts/
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add eks https://aws.github.io/eks-charts/
+helm repo update
+
+```
 
 ## Installing
 
