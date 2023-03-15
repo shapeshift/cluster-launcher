@@ -15,6 +15,7 @@ import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
 import * as ebsCSI from './ebsCSI'
 import * as ebsSnapshotController from './ebsSnapshotController'
+import * as ebsValidationWebhook from './ebsValidationWebhook'
 
 export interface nodeGroups {
     /**
@@ -345,7 +346,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             opts
         )
 
-        new ebsCSI.Deployment(
+        new ebsValidationWebhook.Deployment(
             name,
             {
                 cluster: cluster,
@@ -356,6 +357,16 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         )
 
         new ebsSnapshotController.Deployment(
+            name,
+            {
+                cluster: cluster,
+                namespace,
+                providers: { aws: awsProvider, k8s: k8sProvider }
+            },
+            opts
+        )
+
+        new ebsCSI.Deployment(
             name,
             {
                 cluster: cluster,

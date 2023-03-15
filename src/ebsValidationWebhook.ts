@@ -12,32 +12,22 @@ interface Args {
 export class Deployment extends k8s.helm.v3.Chart {
     constructor(name: string, args: Args, opts?: pulumi.ComponentResourceOptions) {
         super(
-            `${name}-snapshot-controller`,
+            `${name}-validation-webhook`,
             {
-                // https://github.com/piraeusdatastore/helm-charts/tree/main/charts/snapshot-controller
+                // https://github.com/piraeusdatastore/helm-charts/tree/main/charts/snapshot-validation-webhook
                 repo: 'piraeus-charts',
-                chart: 'snapshot-controller',
+                chart: 'snapshot-validation-webhook',
                 namespace: args.namespace,
                 version: '1.7.1',
                 skipCRDRendering: true,
                 values: {
-                    replicaCount: 3,
+                    replicaCount: 1,
                     resources: {
                         limits: {
                             cpu: '50m',
                             memory: '100Mi'
                         }
-                    },
-                    volumeSnapshotClasses: [
-                        {
-                            name: 'csi-aws-vsc',
-                            annotations: {
-                                "snapshot.storage.kubernetes.io/is-default-class": "true"
-                            },
-                            driver: 'ebs.csi.aws.com',
-                            deletionPolicy: 'Delete'
-                        }
-                    ]
+                    }
                 }
             },
             { ...opts, provider: args.providers.k8s }
