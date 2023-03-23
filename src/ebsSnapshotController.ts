@@ -19,7 +19,6 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'snapshot-controller',
                 namespace: args.namespace,
                 version: '1.7.1',
-                skipCRDRendering: true,
                 values: {
                     replicaCount: 3,
                     resources: {
