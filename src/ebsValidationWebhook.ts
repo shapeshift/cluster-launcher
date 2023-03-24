@@ -19,7 +19,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'snapshot-validation-webhook',
                 namespace: args.namespace,
                 version: '1.7.1',
-                skipCRDRendering: true,
+                skipCRDRendering: true, // crds managed and created by snapshot-controller
                 values: {
                     replicaCount: 1,
                     resources: {
@@ -27,7 +27,13 @@ export class Deployment extends k8s.helm.v3.Chart {
                             cpu: '50m',
                             memory: '100Mi'
                         }
-                    }
+                    },
+                    tls: {
+                        certManagerIssuerRef: {
+                            name: "lets-encrypt",
+                            kind: "ClusterIssuer"
+                        }
+                    },
                 }
             },
             { ...opts, provider: args.providers.k8s }

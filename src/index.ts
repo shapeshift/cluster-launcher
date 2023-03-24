@@ -388,7 +388,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             )
 
         // test hello world deployment to verify cluster is working correctly (default namespace)
-        const hw = new helloWorld.Deployment(
+        new helloWorld.Deployment(
             'helloworld',
             { rootDomainName: argsWithDefaults.rootDomainName },
             { ...opts, provider: k8sProvider }
