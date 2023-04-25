@@ -15,7 +15,6 @@ import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
 import * as ebsCSI from './ebsCSI'
 import * as ebsSnapshotController from './ebsSnapshotController'
-import * as ebsValidationWebhook from './ebsValidationWebhook'
 
 export interface nodeGroups {
     /**
@@ -341,16 +340,6 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 cluster: cluster,
                 namespace,
                 zone: zone as unknown as aws.route53.Zone,
-                providers: { aws: awsProvider, k8s: k8sProvider }
-            },
-            opts
-        )
-
-        new ebsValidationWebhook.Deployment(
-            name,
-            {
-                cluster: cluster,
-                namespace,
                 providers: { aws: awsProvider, k8s: k8sProvider }
             },
             opts
