@@ -124,7 +124,7 @@ export interface EKSClusterLauncherArgs {
          * __default__: 0.0.0.0/0 (WARNING: allowing ALL traffic into the cluster)
          */
         whitelist?: string[]
-        /** replicas is the default number of traefik pods to run
+        /** replicas is the number of traefik pods to run
          *
          *__default__: 3
          */
@@ -202,9 +202,9 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     memory: '256Mi'
                 },
                 autoscaling: {
-                    enabled: true,
+                    enabled: false,
                     memoryThreshold: 50,
-                    cpuThreshold: undefined,
+                    cpuThreshold: 80,
                     minReplicas: 1,
                     maxReplicas: 5
                 }
@@ -230,11 +230,18 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
             cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
+            autoscaling: args.autoscaling ?? defaults.autoscaling,
             email: args.email,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
                 replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
-                autoscaling: args.traefik?.autoscaling ?? defaults.traefik.autoscaling,
+                autoscaling: {
+                    enabled: args.traefik?.autoscaling?.enabled ?? defaults.traefik.autoscaling.enabled,
+                    cpuThreshold: args.traefik?.autoscaling?.cpuThreshold ?? defaults.traefik.autoscaling.cpuThreshold,
+                    memoryThreshold: args.traefik?.autoscaling?.memoryThreshold ?? defaults.traefik.autoscaling.memoryThreshold,
+                    minReplicas: args.traefik?.autoscaling?.minReplicas ?? defaults.traefik.autoscaling.minReplicas,
+                    maxReplicas: args.traefik?.autoscaling?.maxReplicas ?? defaults.traefik.autoscaling.maxReplicas,
+                },
                 resources: args.traefik?.resources ?? defaults.traefik.resources
             },
             volumeSize: args.volumeSize ?? defaults.volumeSize
