@@ -114,7 +114,6 @@ export interface EKSClusterLauncherArgs {
      * __default__: undefined
      */
     email?: string
-
     /** traefik allows customization of the traefik ingress controller
      *
      * __default__: defaults to allow All traffic into the cluster, with 3 replicas using 300m cpu and 256 Mi per replica
@@ -137,6 +136,13 @@ export interface EKSClusterLauncherArgs {
         resources?: {
             cpu: string
             memory: string
+        }
+        autoscaling?: {
+            enabled: boolean,
+            memoryThreshold?: number
+            cpuThreshold?: number
+            minReplicas: number
+            maxReplicas: number
         }
     }
     /**
@@ -194,6 +200,13 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 resources: {
                     cpu: '300m',
                     memory: '256Mi'
+                },
+                autoscaling: {
+                    enabled: false,
+                    memoryThreshold: 50,
+                    cpuThreshold: 80,
+                    minReplicas: 1,
+                    maxReplicas: 5
                 }
             },
             volumeSize: 20
@@ -222,6 +235,13 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
                 replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
+                autoscaling: {
+                    enabled: args.traefik?.autoscaling?.enabled ?? defaults.traefik.autoscaling.enabled,
+                    cpuThreshold: args.traefik?.autoscaling?.cpuThreshold ?? defaults.traefik.autoscaling.cpuThreshold,
+                    memoryThreshold: args.traefik?.autoscaling?.memoryThreshold ?? defaults.traefik.autoscaling.memoryThreshold,
+                    minReplicas: args.traefik?.autoscaling?.minReplicas ?? defaults.traefik.autoscaling.minReplicas,
+                    maxReplicas: args.traefik?.autoscaling?.maxReplicas ?? defaults.traefik.autoscaling.maxReplicas,
+                },
                 resources: args.traefik?.resources ?? defaults.traefik.resources
             },
             volumeSize: args.volumeSize ?? defaults.volumeSize
@@ -286,7 +306,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 replicas: argsWithDefaults.traefik.replicas,
                 resources: argsWithDefaults.traefik.resources,
                 whitelist: argsWithDefaults.traefik.whitelist,
-                privateCidr: argsWithDefaults.cidrBlock
+                privateCidr: argsWithDefaults.cidrBlock,
+                autoscaling: argsWithDefaults.traefik.autoscaling
             },
             { ...opts, provider: k8sProvider }
         )

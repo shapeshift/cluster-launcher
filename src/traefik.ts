@@ -5,7 +5,14 @@ export interface ingressControllerArgs {
     namespace: pulumi.Input<string>
     resources: { cpu: string; memory: string }
     privateCidr: string
-    replicas: number
+    replicas: number,
+    autoscaling: {
+        enabled: boolean,
+        memoryThreshold: number
+        cpuThreshold: number
+        minReplicas: number
+        maxReplicas: number
+    }
     /**
      * List of cidrs to allow ingress into the cluster
      * If this is empty 0.0.0.0/0 is used allow ALL traffic into the cluster
@@ -138,6 +145,49 @@ export class Deployment extends k8s.helm.v3.Chart {
             },
             opts
         )
+
+        if (args.autoscaling.enabled) {
+            new k8s.autoscaling.v2.HorizontalPodAutoscaler(
+                name,
+                {
+                    metadata: {
+                        namespace: args.namespace,
+                    },
+                    spec: {
+                        minReplicas: args.autoscaling.minReplicas,
+                        maxReplicas: args.autoscaling.maxReplicas,
+                        scaleTargetRef: {
+                            apiVersion: 'apps/v1',
+                            kind: 'Deployment',
+                            name: name,
+                        },
+                        metrics: [
+                            {
+                                type: 'Resource',
+                                resource: {
+                                    name: 'cpu',
+                                    target: {
+                                        type: 'Utilization',
+                                        averageUtilization: args.autoscaling.cpuThreshold
+                                    }
+                                }
+                            },
+                            {
+                                type: 'Resource',
+                                resource: {
+                                    name: 'memory',
+                                    target: {
+                                        type: 'Utilization',
+                                        averageUtilization: args.autoscaling.memoryThreshold
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                },
+                { ...opts, dependsOn: this.ready, parent: this }
+            )
+        }
 
         //TODO seems like we need `/dashboard/#/ in order to see dashboard. fix / answer why this is
         new k8s.apiextensions.CustomResource(
