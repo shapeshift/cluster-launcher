@@ -5,7 +5,8 @@ export interface ingressControllerArgs {
     namespace: pulumi.Input<string>
     resources: { cpu: string; memory: string }
     privateCidr: string
-    replicas: number
+    minReplicas: number
+    maxReplicas: number
     /**
      * List of cidrs to allow ingress into the cluster
      * If this is empty 0.0.0.0/0 is used allow ALL traffic into the cluster
@@ -122,7 +123,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                         minAvailable: 2
                     },
                     deployment: {
-                        replicas: args.replicas,
+                        replicas: args.minReplicas,
                         podAnnotations: {
                             'prometheus.io/port': '9100',
                             'prometheus.io/scrape': 'true'
@@ -138,6 +139,37 @@ export class Deployment extends k8s.helm.v3.Chart {
             },
             opts
         )
+
+        new k8s.autoscaling.v2.HorizontalPodAutoscaler(
+            name,
+            {
+              metadata: {
+                namespace: args.namespace,
+              },
+              spec: {
+                minReplicas: args.minReplicas,
+                maxReplicas: args.maxReplicas,
+                scaleTargetRef: {
+                  apiVersion: 'apps/v1',
+                  kind: 'Deployment',
+                  name: name,
+                },
+                metrics: [
+                  {
+                    type: 'Resource',
+                    resource: {
+                      name: 'memory',
+                      target: {
+                        type: 'Utilization',
+                        averageUtilization: 50
+                      }
+                    }
+                  }
+                ]
+              },
+            },
+            { ...opts, dependsOn: this.ready, parent: this }
+          )
 
         //TODO seems like we need `/dashboard/#/ in order to see dashboard. fix / answer why this is
         new k8s.apiextensions.CustomResource(

@@ -125,11 +125,16 @@ export interface EKSClusterLauncherArgs {
          * __default__: 0.0.0.0/0 (WARNING: allowing ALL traffic into the cluster)
          */
         whitelist?: string[]
-        /** replicas is the number of traefik pods to run
+        /** min replicas is the min number of traefik pods to run
          *
          *__default__: 3
          */
-        replicas?: number
+        minReplicas?: number
+        /** max replicas is the max number of traefik pods to run
+         *
+         *__default__: 10
+         */
+        maxReplicas?: number
         /** resources is used to specify how much memory and cpu to give traefik pods
          *
          * __default__ : { cpu: '300m', memory: '256Mi' }
@@ -190,7 +195,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             autoscaling: false,
             traefik: {
                 whitelist: [],
-                replicas: 3,
+                minReplicas: 3,
+                maxReplicas: 10,
                 resources: {
                     cpu: '300m',
                     memory: '256Mi'
@@ -221,7 +227,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             email: args.email,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
-                replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
+                minReplicas: args.traefik?.minReplicas ?? defaults.traefik.minReplicas,
+                maxReplicas: args.traefik?.maxReplicas ?? defaults.traefik.maxReplicas,
                 resources: args.traefik?.resources ?? defaults.traefik.resources
             },
             volumeSize: args.volumeSize ?? defaults.volumeSize
@@ -283,7 +290,8 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 namespace,
-                replicas: argsWithDefaults.traefik.replicas,
+                minReplicas: argsWithDefaults.traefik.minReplicas,
+                maxReplicas: argsWithDefaults.traefik.maxReplicas,
                 resources: argsWithDefaults.traefik.resources,
                 whitelist: argsWithDefaults.traefik.whitelist,
                 privateCidr: argsWithDefaults.cidrBlock
