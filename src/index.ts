@@ -58,6 +58,11 @@ export interface EKSClusterLauncherArgs {
      * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
      */
     nodeGroups: nodeGroups[]
+    /** autoscaling configures min and maximum number of instances to run per AZ
+     *
+     * __default__: false
+     */
+    autoscaling?: boolean
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
      * __default__: false
@@ -109,7 +114,6 @@ export interface EKSClusterLauncherArgs {
      * __default__: undefined
      */
     email?: string
-
     /** traefik allows customization of the traefik ingress controller
      *
      * __default__: defaults to allow All traffic into the cluster, with 3 replicas using 300m cpu and 256 Mi per replica
@@ -189,6 +193,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     }
                 }
             },
+            autoscaling: false,
             traefik: {
                 whitelist: [],
                 replicas: 3,
@@ -295,7 +300,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 resources: argsWithDefaults.traefik.resources,
                 whitelist: argsWithDefaults.traefik.whitelist,
                 privateCidr: argsWithDefaults.cidrBlock,
-                autoscaling: argsWithDefaults.autoscaling
+                autoscaling: argsWithDefaults.traefik.autoscaling
             },
             { ...opts, provider: k8sProvider }
         )
