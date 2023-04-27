@@ -34,7 +34,11 @@ export class Deployment extends k8s.helm.v3.Chart {
                                 "snapshot.storage.kubernetes.io/is-default-class": "true"
                             },
                             driver: 'ebs.csi.aws.com',
-                            deletionPolicy: 'Delete'
+                            deletionPolicy: 'Delete',
+                            parameters: {
+                                tagSpecification_1: "namespace={{ .VolumeSnapshotNamespace }}",
+                                tagSpecification_2: "snapshotname={{ .VolumeSnapshotName }}"
+                            }
                         }
                     ]
                 }
