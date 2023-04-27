@@ -8,8 +8,8 @@ export interface ingressControllerArgs {
     replicas: number,
     autoscaling: {
         enabled: boolean,
-        memoryThreshold?: number
-        cpuThreshold?: number
+        memoryThreshold: number
+        cpuThreshold: number
         minReplicas: number
         maxReplicas: number
     }
@@ -146,18 +146,7 @@ export class Deployment extends k8s.helm.v3.Chart {
             opts
         )
 
-        if (args.autoscaling && args.autoscaling.enabled) {
-            if (!!args.autoscaling.cpuThreshold && !!args.autoscaling.memoryThreshold) {
-                throw new Error(`one of cpuThreshold or memoryThreshold must be configured`);
-            }
-
-            if (args.autoscaling.cpuThreshold && args.autoscaling.memoryThreshold) {
-                throw new Error(`only one of cpuThreshold or memoryThreshold can be configured`);
-            }
-
-            const resource = args.autoscaling.cpuThreshold ? 'cpu' : 'memory'
-            const threshold = args.autoscaling.cpuThreshold ? args.autoscaling.cpuThreshold : args.autoscaling.memoryThreshold
-
+        if (args.autoscaling.enabled) {
             new k8s.autoscaling.v2.HorizontalPodAutoscaler(
                 name,
                 {
@@ -176,10 +165,20 @@ export class Deployment extends k8s.helm.v3.Chart {
                             {
                                 type: 'Resource',
                                 resource: {
-                                    name: resource,
+                                    name: 'cpu',
                                     target: {
                                         type: 'Utilization',
-                                        averageUtilization: threshold
+                                        averageUtilization: args.autoscaling.cpuThreshold
+                                    }
+                                }
+                            },
+                            {
+                                type: 'Resource',
+                                resource: {
+                                    name: 'memory',
+                                    target: {
+                                        type: 'Utilization',
+                                        averageUtilization: args.autoscaling.memoryThreshold
                                     }
                                 }
                             }
