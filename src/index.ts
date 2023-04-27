@@ -58,11 +58,6 @@ export interface EKSClusterLauncherArgs {
      * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
      */
     nodeGroups: nodeGroups[]
-    /** autoscaling configures min and maximum number of instances to run per AZ
-     *
-     * __default__: false
-     */
-    autoscaling?: boolean
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
      * __default__: false
@@ -125,16 +120,11 @@ export interface EKSClusterLauncherArgs {
          * __default__: 0.0.0.0/0 (WARNING: allowing ALL traffic into the cluster)
          */
         whitelist?: string[]
-        /** min replicas is the min number of traefik pods to run
+        /** replicas is the default number of traefik pods to run
          *
          *__default__: 3
          */
-        minReplicas?: number
-        /** max replicas is the max number of traefik pods to run
-         *
-         *__default__: 10
-         */
-        maxReplicas?: number
+        replicas?: number
         /** resources is used to specify how much memory and cpu to give traefik pods
          *
          * __default__ : { cpu: '300m', memory: '256Mi' }
@@ -142,6 +132,13 @@ export interface EKSClusterLauncherArgs {
         resources?: {
             cpu: string
             memory: string
+        }
+        autoscaling?: {
+            enabled: boolean,
+            memoryThreshold?: number
+            cpuThreshold?: number
+            minReplicas: number
+            maxReplicas: number
         }
     }
     /**
@@ -192,14 +189,19 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                     }
                 }
             },
-            autoscaling: false,
             traefik: {
                 whitelist: [],
-                minReplicas: 3,
-                maxReplicas: 10,
+                replicas: 3,
                 resources: {
                     cpu: '300m',
                     memory: '256Mi'
+                },
+                autoscaling: {
+                    enabled: true,
+                    memoryThreshold: 50,
+                    cpuThreshold: undefined,
+                    minReplicas: 1,
+                    maxReplicas: 5
                 }
             },
             volumeSize: 20
@@ -223,12 +225,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
             cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
-            autoscaling: args.autoscaling ?? defaults.autoscaling,
             email: args.email,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
-                minReplicas: args.traefik?.minReplicas ?? defaults.traefik.minReplicas,
-                maxReplicas: args.traefik?.maxReplicas ?? defaults.traefik.maxReplicas,
+                replicas: args.traefik?.replicas ?? defaults.traefik.replicas,
+                autoscaling: args.traefik?.autoscaling ?? defaults.traefik.autoscaling,
                 resources: args.traefik?.resources ?? defaults.traefik.resources
             },
             volumeSize: args.volumeSize ?? defaults.volumeSize
@@ -290,11 +291,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             name,
             {
                 namespace,
-                minReplicas: argsWithDefaults.traefik.minReplicas,
-                maxReplicas: argsWithDefaults.traefik.maxReplicas,
+                replicas: argsWithDefaults.traefik.replicas,
                 resources: argsWithDefaults.traefik.resources,
                 whitelist: argsWithDefaults.traefik.whitelist,
-                privateCidr: argsWithDefaults.cidrBlock
+                privateCidr: argsWithDefaults.cidrBlock,
+                autoscaling: argsWithDefaults.autoscaling
             },
             { ...opts, provider: k8sProvider }
         )
