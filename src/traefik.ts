@@ -23,13 +23,6 @@ export interface ingressControllerArgs {
 // Requires cert manager to be present beforehand
 export class Deployment extends k8s.helm.v3.Chart {
     constructor(name: string, args: ingressControllerArgs, opts: pulumi.ComponentResourceOptions) {
-        const annotations: { [key: string]: pulumi.Output<string> | string } = {
-            'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'http',
-            'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '30',
-            // This is for layer 4. It will forward ip through to traefik. THIS DOESN'T SUPPORT SECURITY GROUPS
-            'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb'
-        }
-
         name = `${name}-traefik`
 
         super(
@@ -38,36 +31,27 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'traefik',
                 repo: 'traefik',
                 namespace: args.namespace,
-                version: '20.8.0',
+                version: '24.0.0',
                 values: {
                     providers: {
                         kubernetesIngress: {
                             // need this so that the Ingress will have "ADDRESS" set from service. External-DNS needs the address
-                            publishedService: {
-                                enabled: true
-                            }
+                            publishedService: { enabled: true }
                         }
                     },
                     ports: {
                         // TODO secure traefik ingress recommended https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml#L205
-                        web: {
-                            redirectTo: 'websecure'
-                        }
+                        web: { redirectTo: 'websecure' }
                     },
                     logs: {
-                        general: {
-                            level: 'ERROR',
-                            format: 'json'
-                        },
+                        general: { level: 'ERROR', format: 'json' },
                         access: {
                             enabled: true,
                             format: 'json',
                             fields: {
                                 headers: {
                                     defaultmode: 'keep',
-                                    names: {
-                                        Authorization: 'redact'
-                                    }
+                                    names: { Authorization: 'redact' }
                                 }
                             }
                         }
@@ -91,17 +75,20 @@ export class Deployment extends k8s.helm.v3.Chart {
                         '--entryPoints.websecure.transport.respondingTimeouts.readTimeout=30s',
                         '--entryPoints.websecure.transport.respondingTimeouts.writeTimeout=30s',
                         '--entryPoints.websecure.transport.respondingTimeouts.idleTimeout=30s'
-                        //pulumi.interpolate`--entryPoints.websecure.http.middlewares=${args.namespace}-${authHttpsHeader.metadata.name}@kubernetescrd`
                     ],
                     globalArguments: [], // git rid of sendanonymoususage
                     service: {
                         loadBalancerSourceRanges: args.whitelist,
-                        annotations
+                        annotations: {
+                            'service.beta.kubernetes.io/aws-load-balancer-backend-protocol': 'http',
+                            'service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout': '30',
+                            // This is for layer 4. It will forward ip through to traefik. THIS DOESN'T SUPPORT SECURITY GROUPS
+                            'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb'
+                        }
                     },
                     ingressRoute: {
-                        dashboard: {
-                            enabled: false // disable dashboard deploy via helmchart. uses Hooks which aren't supported by pulumi. https://github.com/pulumi/pulumi-kubernetes/issues/555
-                        }
+                        // disable dashboard deploy via helmchart. uses Hooks which aren't supported by pulumi. https://github.com/pulumi/pulumi-kubernetes/issues/555
+                        dashboard: { enabled: false }
                     },
                     affinity: {
                         podAntiAffinity: {
@@ -110,13 +97,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                                     weight: 100,
                                     podAffinityTerm: {
                                         labelSelector: {
-                                            matchExpressions: [
-                                                {
-                                                    key: 'app',
-                                                    operator: 'In',
-                                                    values: [name]
-                                                }
-                                            ]
+                                            matchExpressions: [{ key: 'app', operator: 'In', values: [name] }]
                                         },
                                         topologyKey: 'failure-domain.beta.kubernetes.io/zone'
                                     }
@@ -130,9 +111,12 @@ export class Deployment extends k8s.helm.v3.Chart {
                     },
                     deployment: {
                         replicas: args.replicas,
-                        podAnnotations: {
-                            'prometheus.io/port': '9100',
-                            'prometheus.io/scrape': 'true'
+                    },
+                    metrics: {
+                        prometheus: {
+                            serviceMonitor: {
+                                namespace: args.namespace,
+                            }
                         }
                     }
                 },
