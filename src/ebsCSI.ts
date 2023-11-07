@@ -18,30 +18,39 @@ export class Deployment extends k8s.helm.v3.Chart {
                 repo: 'aws-ebs-csi-driver',
                 chart: 'aws-ebs-csi-driver',
                 namespace: args.namespace,
-                version: '2.18.0',
+                version: '2.24.1',
                 values: {
                     controller: {
                         region: args.providers.aws.region,
+                        volumeModificationFeature: { enabled: true }
                     },
+                    storageClasses: [
+                        {
+                            name: 'ebs-csi-gp2',
+                            allowVolumeExpansion: true,
+                            provisioner: 'ebs.csi.aws.com',
+                            reclaimPolicy: 'Delete',
+                            volumeBindingMode: 'WaitForFirstConsumer',
+                            parameters: {
+                                'csi.storage.k8s.io/fstype': 'ext4',
+                                type: 'gp2',
+                            }
+                        },
+                        {
+                            name: 'ebs-csi-gp3',
+                            allowVolumeExpansion: true,
+                            provisioner: 'ebs.csi.aws.com',
+                            reclaimPolicy: 'Delete',
+                            volumeBindingMode: 'WaitForFirstConsumer',
+                            parameters: {
+                                'csi.storage.k8s.io/fstype': 'ext4',
+                                type: 'gp3',
+                            }
+                        }
+                    ]
                 }
             },
             { ...opts, provider: args.providers.k8s }
-        )
-
-        new k8s.storage.v1.StorageClass(
-            'ebs-csi-gp2',
-            {
-                metadata: { name: 'ebs-csi-gp2' },
-                provisioner: 'ebs.csi.aws.com',
-                reclaimPolicy: 'Delete',
-                volumeBindingMode: 'WaitForFirstConsumer',
-                allowVolumeExpansion: true,
-                parameters: {
-                    type: 'gp2',
-                    fsType: 'ext4'
-                }
-            },
-            { ...opts, provider: args.providers.k8s, parent: this, deleteBeforeReplace: true }
         )
 
         const iamPolicy = new aws.iam.Policy(
