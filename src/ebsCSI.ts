@@ -26,7 +26,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                     },
                     storageClasses: [
                         {
-                            name: 'ebs-csi-gp2',
+                            name: 'gp2',
                             allowVolumeExpansion: true,
                             provisioner: 'ebs.csi.aws.com',
                             reclaimPolicy: 'Delete',
@@ -37,7 +37,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                             }
                         },
                         {
-                            name: 'ebs-csi-gp3',
+                            name: 'gp3',
                             allowVolumeExpansion: true,
                             provisioner: 'ebs.csi.aws.com',
                             reclaimPolicy: 'Delete',

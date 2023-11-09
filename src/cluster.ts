@@ -49,7 +49,10 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
                 {
                     ebs: {
                         deleteOnTermination: 'true',
-                        volumeSize: args.volumeSize
+                        iops: 3000,
+                        throughput: 125,
+                        volumeSize: args.volumeSize,
+                        volumeType: 'gp3'
                     },
                     deviceName: '/dev/xvda'
                 }
