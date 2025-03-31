@@ -93,7 +93,6 @@ export class Deployment extends k8s.helm.v3.Chart {
         new aws.iam.RolePolicyAttachment(
             name,
             {
-                // TODO don't use instance role because it's sketch : https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#ec2-instance-role-not-recommended
                 role: args.cluster.instanceRoles[0].name,
                 policyArn: iamPolicy.arn
             },

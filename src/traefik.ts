@@ -76,11 +76,9 @@ export class Deployment extends k8s.helm.v3.Chart {
                         limits: args.resources,
                         requests: args.resources
                     },
-                    // TODO potentially secure further with middlewares. Currently the API is exposed to anyone in sourceRange (VPN, NATs)
                     additionalArguments: [
                         '--api.dashboard',
                         '--entrypoints.web.http.redirections.entryPoint.permanent=true',
-                        '--metrics.datadog.address=datadog-statsd:8125',
                         `--entryPoints.web.forwardedHeaders.trustedIPs=${args.privateCidr}`,
                         `--entryPoints.web.proxyProtocol.trustedIPs=${args.privateCidr}`,
                         '--entryPoints.web.transport.respondingTimeouts.readTimeout=30s',
@@ -91,9 +89,8 @@ export class Deployment extends k8s.helm.v3.Chart {
                         '--entryPoints.websecure.transport.respondingTimeouts.readTimeout=30s',
                         '--entryPoints.websecure.transport.respondingTimeouts.writeTimeout=30s',
                         '--entryPoints.websecure.transport.respondingTimeouts.idleTimeout=30s'
-                        //pulumi.interpolate`--entryPoints.websecure.http.middlewares=${args.namespace}-${authHttpsHeader.metadata.name}@kubernetescrd`
                     ],
-                    globalArguments: [], // git rid of sendanonymoususage
+                    globalArguments: [],
                     service: {
                         loadBalancerSourceRanges: args.whitelist,
                         annotations
@@ -189,7 +186,6 @@ export class Deployment extends k8s.helm.v3.Chart {
             )
         }
 
-        //TODO seems like we need `/dashboard/#/ in order to see dashboard. fix / answer why this is
         new k8s.apiextensions.CustomResource(
             'traefik-dashboard',
             {
