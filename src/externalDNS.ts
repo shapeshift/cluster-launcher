@@ -93,8 +93,8 @@ export class Deployment extends k8s.helm.v3.Chart {
         new aws.iam.RolePolicyAttachment(
             name,
             {
-                role: args.cluster.instanceRoles[0].name,
-                policyArn: iamPolicy.arn
+                policyArn: iamPolicy.arn,
+                role: args.cluster.instanceRoles[0],
             },
             { ...opts, provider: args.providers.aws, parent: this }
         )

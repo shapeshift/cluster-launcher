@@ -28,13 +28,16 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         name,
         {
             vpcId: args.vpc.vpcId,
+            createInstanceRole: true,
             skipDefaultNodeGroup: true,
+            authenticationMode: eks.AuthenticationMode.ConfigMap,
             maxSize: 0, // We are using SPOT instance managed node groups instead
             minSize: 0, // We are using SPOT instance managed node groups instead
             desiredCapacity: 0, // We are using SPOT instance managed node groups instead
             subnetIds,
+            corednsAddonOptions: { enabled: true },
+            kubeProxyAddonOptions: { enabled: true },
             providerCredentialOpts: { profileName },
-
             tags
         },
         opts
@@ -44,7 +47,7 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         name,
         {
             description: `${name} launch template for eks worker nodes (managed by pulumi)`,
-            vpcSecurityGroupIds: [cluster.nodeSecurityGroup.id],
+            vpcSecurityGroupIds: cluster.nodeSecurityGroup.apply(sg => sg ? [sg.id] : []),
             blockDeviceMappings: [
                 {
                     ebs: {
@@ -106,5 +109,5 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         })
     })
 
-    return { kubeconfig: cluster.getKubeconfig({ profileName }), cluster }
+    return { kubeconfig: cluster.getKubeconfig({ profileName }).result, cluster }
 }
