@@ -38,7 +38,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'traefik',
                 repo: 'traefik',
                 namespace: args.namespace,
-                version: '20.8.0',
+                version: '22.2.0',
                 values: {
                     providers: {
                         kubernetesIngress: {
