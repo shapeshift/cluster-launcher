@@ -16,34 +16,24 @@ export class Deployment extends k8s.helm.v3.Chart {
         super(
             `${name}-external-dns-helmchart`,
             {
-                repo: 'bitnami',
-                chart: 'external-dns',
+                // https://github.com/bitnami/charts/tree/main/bitnami/external-dns
+                chart: 'oci://registry-1.docker.io/bitnamicharts/external-dns',
                 transformations: [(manifest: any) => (manifest.metadata.namespace = args.namespace)],
                 namespace: args.namespace,
-                version: '6.13.2',
+                version: '8.7.9',
                 values: {
                     resources: {
                         limits: {
                             cpu: '50m',
                             memory: '100Mi'
                         },
-                        requests: {
-                            cpu: '50m',
-                            memory: '100Mi'
-                        }
                     },
                     domainFilters: [args.zone.name],
                     provider: 'aws',
                     registry: 'txt',
                     policy: 'sync',
                     txtOwnerId: name,
-                    sources: ['service', 'ingress'],
-                    rbac: {
-                        create: true
-                    },
-                    aws: {
-                        batchChangeSize: 100
-                    }
+                    sources: ['service', 'ingress']
                 }
             },
             { ...opts, provider: args.providers.k8s }
