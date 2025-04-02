@@ -38,7 +38,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'traefik',
                 repo: 'traefik',
                 namespace: args.namespace,
-                version: '24.0.0',
+                version: '27.0.0',
                 values: {
                     providers: {
                         kubernetesIngress: {
@@ -49,9 +49,10 @@ export class Deployment extends k8s.helm.v3.Chart {
                         }
                     },
                     ports: {
-                        // TODO secure traefik ingress recommended https://github.com/traefik/traefik-helm-chart/blob/master/traefik/values.yaml#L205
                         web: {
-                            redirectTo: 'websecure'
+                            redirectTo: {
+                                port: 'websecure'
+                            }
                         }
                     },
                     logs: {
