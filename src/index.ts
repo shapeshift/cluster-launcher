@@ -5,11 +5,8 @@ import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
 
 import * as externalDNS from './externalDNS'
-import * as helloWorld from './helloWorld'
 import * as traefik from './traefik'
 import * as nodeTerminationHandler from './nodeTerminationHandler'
-import * as loki from './loki'
-import * as grafana from './grafana'
 import createCluster from './cluster'
 import * as crds from './crds'
 import * as autoscaler from './clusterAutoscaler'
@@ -49,51 +46,30 @@ export interface nodeGroups {
 export interface EKSClusterLauncherArgs {
     /** rootDomainName is the public dns name to configure external-dns and cert manager with */
     rootDomainName: string
-     /**
-     * nodeGroups is a list of EKS managed node groups that will be created
-     * __default__: { name: 'default', type: 'SPOT', minSize: 1, maxSize: 3, desired: 1, instanceTypes: ['r5.large', 'r5a.large', 'r5b.large', 'r5n.large']} 
-     * This name will be used to create node labels for targeting workloads
-     * Node label format: 'nodeGroup':'<clusterName>-<nodeGroup.name>'
-     *
-     * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
-     */
+    /**
+    * nodeGroups is a list of EKS managed node groups that will be created
+    * __default__: { name: 'default', type: 'SPOT', minSize: 1, maxSize: 3, desired: 1, instanceTypes: ['r5.large', 'r5a.large', 'r5b.large', 'r5n.large']} 
+    * This name will be used to create node labels for targeting workloads
+    * Node label format: 'nodeGroup':'<clusterName>-<nodeGroup.name>'
+    *
+    * https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+    */
     nodeGroups: nodeGroups[]
     /** autoscaling configures min and maximum number of instances to run per AZ
      *
      * __default__: false
      */
     autoscaling?: boolean
+    /** enableSnapshotController enables deployment of an ebs snapshot controller for automated snapshotting
+     *
+     * __default__: false
+     */
+    enableSnapshotController?: boolean
     /** allAzs if true, will deploy to all AZs in specified region. otherwise, deploys to 2 AZs which is the minimum required by EKS
      *
      * __default__: false
      */
     allAZs?: boolean
-    /** logging - if true we will create a promtail/loki deployment
-     *
-     * __default__: { enabled: false, persistentVolume: false, pvSize: '10Gi', retentionPeriod: '336h'}
-     * If persistentVolume is false, logs will be stored on ephemeral storage and will be lost if the loki pod is rescheduled
-     * pvSize must be at least 10Gi
-     */
-    logging?: {
-        enabled: boolean
-        persistentVolume: boolean
-        pvSize: string
-        retentionPeriod: string
-        resources?: {
-            grafana?: {
-                cpu: string
-                memory: string
-            }
-            loki?: {
-                cpu: string
-                memory: string
-            }
-            promtail?: {
-                cpu: string
-                memory: string
-            }
-        }
-    }
     /** profile is the local profile to use configured in ~/.aws/credentials file
      *
      * __default__: 'default'
@@ -168,32 +144,13 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             [P in keyof T]-?: DeepRequired<T[P]>
         }
 
-        const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'email' | 'nodeGroups' >> = {
+        const defaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'rootDomainName' | 'email' | 'nodeGroups'>> = {
             allAZs: false,
             profile: 'default',
             region: 'us-east-1',
             cidrBlock: '10.0.0.0/16',
-            logging: {
-                enabled: false,
-                persistentVolume: false,
-                pvSize: '10Gi',
-                retentionPeriod: '336h',
-                resources: {
-                    grafana: {
-                        cpu: '200m',
-                        memory: '256Mi'
-                    },
-                    loki: {
-                        cpu: '250m',
-                        memory: '256Mi'
-                    },
-                    promtail: {
-                        cpu: '100m',
-                        memory: '128Mi'
-                    }
-                }
-            },
             autoscaling: false,
+            enableSnapshotController: false,
             traefik: {
                 whitelist: [],
                 replicas: 3,
@@ -215,22 +172,12 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
         const argsWithDefaults: DeepRequired<Omit<EKSClusterLauncherArgs, 'email'>> & { email: string | undefined } = {
             nodeGroups: args.nodeGroups,
             rootDomainName: args.rootDomainName,
-            logging: {
-                enabled: args.logging?.enabled ?? defaults.logging.enabled,
-                persistentVolume: args.logging?.persistentVolume ?? defaults.logging.persistentVolume,
-                pvSize: args.logging?.pvSize ?? defaults.logging.pvSize,
-                retentionPeriod: args.logging?.retentionPeriod ?? defaults.logging.retentionPeriod,
-                resources: {
-                    grafana: args.logging?.resources?.grafana ?? defaults.logging.resources.grafana,
-                    loki: args.logging?.resources?.loki ?? defaults.logging.resources.loki,
-                    promtail: args.logging?.resources?.promtail ?? defaults.logging.resources.promtail
-                }
-            },
             allAZs: args.allAZs ?? defaults.allAZs,
             profile: args.profile ?? defaults.profile,
             region: args.region ?? defaults.region,
             cidrBlock: args.cidrBlock ?? defaults.cidrBlock,
             autoscaling: args.autoscaling ?? defaults.autoscaling,
+            enableSnapshotController: args.enableSnapshotController ?? defaults.enableSnapshotController,
             email: args.email,
             traefik: {
                 whitelist: args.traefik?.whitelist ?? defaults.traefik.whitelist,
@@ -287,14 +234,11 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: k8sProvider }
         )
 
-        // deploy cert manager before traefik and external dns
-        // also deploy metric-server
-        // ...also event-router
+        // deploy crds (cert manager and metrics-server) before traefik and external dns
         crds.deploy(
             namespace,
             argsWithDefaults.rootDomainName,
             argsWithDefaults.region,
-            argsWithDefaults.logging.enabled,
             argsWithDefaults.email,
             { ...opts, provider: k8sProvider }
         )
@@ -327,50 +271,12 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: k8sProvider }
         )
 
-        if (argsWithDefaults.logging.enabled) {
-            new loki.Deployment(
-                name,
-                {
-                    cluster: cluster,
-                    namespace: namespace,
-                    persistentVolume: argsWithDefaults.logging.persistentVolume,
-                    pvSize: argsWithDefaults.logging.pvSize,
-                    retentionPeriod: argsWithDefaults.logging.retentionPeriod,
-                    resources: {
-                        loki: argsWithDefaults.logging?.resources?.loki,
-                        promtail: argsWithDefaults.logging?.resources?.promtail
-                    }
-                },
-                { ...opts, provider: k8sProvider }
-            )
-            new grafana.Deployment(
-                name,
-                {
-                    cluster: cluster,
-                    namespace: namespace,
-                    logging: argsWithDefaults.logging.enabled,
-                    resources: argsWithDefaults.logging.resources.grafana
-                },
-                { ...opts, provider: k8sProvider }
-            )
-        }
-
         new externalDNS.Deployment(
             name,
             {
                 cluster: cluster,
                 namespace,
                 zone: zone as unknown as aws.route53.Zone,
-                providers: { aws: awsProvider, k8s: k8sProvider }
-            },
-            opts
-        )
-
-        new ebsSnapshotController.Deployment(
-            name,
-            {
-                cluster: cluster,
-                namespace,
                 providers: { aws: awsProvider, k8s: k8sProvider }
             },
             opts
@@ -386,7 +292,19 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             opts
         )
 
-        if (argsWithDefaults.autoscaling)
+        if (argsWithDefaults.enableSnapshotController) {
+            new ebsSnapshotController.Deployment(
+                name,
+                {
+                    cluster: cluster,
+                    namespace,
+                    providers: { aws: awsProvider, k8s: k8sProvider }
+                },
+                opts
+            )
+        }
+
+        if (argsWithDefaults.autoscaling) {
             new autoscaler.Deployment(
                 name,
                 {
@@ -396,13 +314,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
                 },
                 opts
             )
-
-        // test hello world deployment to verify cluster is working correctly (default namespace)
-        new helloWorld.Deployment(
-            'helloworld',
-            { rootDomainName: argsWithDefaults.rootDomainName },
-            { ...opts, provider: k8sProvider }
-        )
+        }
 
         const eksCluster = new EKSClusterLauncher(name, argsWithDefaults, opts)
 

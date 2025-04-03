@@ -18,7 +18,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 repo: 'aws-ebs-csi-driver',
                 chart: 'aws-ebs-csi-driver',
                 namespace: args.namespace,
-                version: '2.24.1',
+                version: '2.41.0',
                 values: {
                     controller: {
                         region: args.providers.aws.region,
@@ -47,7 +47,10 @@ export class Deployment extends k8s.helm.v3.Chart {
                                 type: 'gp3',
                             }
                         }
-                    ]
+                    ],
+                    node: {
+                        enableWindows: false,
+                    }
                 }
             },
             { ...opts, provider: args.providers.k8s }
@@ -154,8 +157,8 @@ export class Deployment extends k8s.helm.v3.Chart {
         new aws.iam.RolePolicyAttachment(
             `${name}-ebs-csi-driver`,
             {
-                role: args.cluster.instanceRoles[0],
-                policyArn: iamPolicy.arn
+                policyArn: iamPolicy.arn,
+                role: args.cluster.instanceRoles[0]
             },
             { ...opts, provider: args.providers.aws, parent: this }
         )

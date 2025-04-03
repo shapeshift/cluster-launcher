@@ -111,26 +111,8 @@ This package deploys everything nessesary for an opperational eks cluster includ
     -   Traefik as Ingress Controller
     -   External DNS for dynamic configuration of route53 records from Ingress objects
     -   AWS Node Termination Handler to ensure we can gracefully stop services if SPOT instances are preempted 
-    -   A simple Hello World app at `helloworld.<rootDomainName>` to see that all components are working correctly
-    -   A PLG (Promtail, Loki, Grafana) stack for log aggregation is available but not deployed by default
-
-## Access Grafana
-
-A very basic PLG stack can be implemented to aid in troubleshooting, this is how you can access Grafana from outside your cluster.
-
-_Replace `<templated variables>` with variables specific to your deployment_
-
-1. In the namespace where grafana is hosted get the admin password
-`kubectl get secret <grafana secret> -o jsonpath="{.data.admin-password}" | base64 --decode ; echo`
-
-2. Forward grafana port to local machine
-`kubectl port-forward service/<grafana service> 8080:80`
-
-3. On your local machine, navigate to `localhost:8080`
-`admin / <password retrieved during step 1>`
 
 ## Additional Notes
 
 -   traefik dashboard is accessible through port forwarding at path `/dashboard/#`
 -   we are currently using instance role for route53, but this can be dangerous because ALL pods in cluster will be allowed to modify route53. Be careful with what workloads are running in this cluster. [more information](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#ec2-instance-role-not-recommended)
--   If using persistent volumes in the Loki stack you'll want to ensure EBS volumes are cleaned up if logging is disabled.  Default behavior is that persistent volume claims are not deleted when it's parent StatefulSet is deleted. Functionality to cleanup a PVC when a StatefulSet is removed is slated for release in [Kubernetes v1.23](https://github.com/kubernetes/enhancements/tree/master/keps/sig-apps/1847-autoremove-statefulset-pvcs)

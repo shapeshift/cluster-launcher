@@ -6,7 +6,6 @@ export const deploy = (
     namespace: string,
     dnsZone: string,
     region: string,
-    logging?: boolean,
     email?: string,
     opts?: pulumi.ComponentResourceOptions
 ) => {
@@ -22,15 +21,7 @@ export const deploy = (
         opts
     )
 
-    if (logging) {
-        new k8s.yaml.ConfigFile(
-            'event-router',
-            { file: `${__dirname}/event-router.yaml` },
-            opts
-        )
-    }
-
-    //Also Issuer for ACME using lets encrypt
+    // Also Issuer for ACME using lets encrypt
     new certmanager.v1.ClusterIssuer(
         'lets-encrypt',
         {
