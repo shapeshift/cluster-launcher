@@ -214,7 +214,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { provider: awsProvider }
         )
 
-        const { kubeconfig, cluster } = await createCluster(
+        const { cluster } = createCluster(
             name,
             {
                 vpc,
@@ -225,7 +225,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
             { ...opts, provider: awsProvider }
         )
 
-        const k8sProvider = new k8s.Provider(name, { kubeconfig }, { dependsOn: [cluster] })
+        const k8sProvider = new k8s.Provider(name, { kubeconfig: cluster.kubeconfigJson }, { dependsOn: [cluster] })
 
         // create a namespace for everything infra related
         const infraNamespace = new k8s.core.v1.Namespace(
@@ -318,7 +318,7 @@ export class EKSClusterLauncher extends pulumi.ComponentResource {
 
         const eksCluster = new EKSClusterLauncher(name, argsWithDefaults, opts)
 
-        eksCluster.kubeconfig = kubeconfig
+        eksCluster.kubeconfig = cluster.kubeconfigJson
         eksCluster.cluster = cluster
         eksCluster.providers = {
             aws: awsProvider,

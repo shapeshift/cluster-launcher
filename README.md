@@ -15,8 +15,6 @@ The following charts must be added to your repo list:
 helm repo add traefik https://traefik.github.io/charts
 helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
 helm repo add piraeus-charts https://piraeus.io/helm-charts/
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo add eks https://aws.github.io/eks-charts/
 helm repo update
 
 ```

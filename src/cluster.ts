@@ -16,7 +16,7 @@ interface ClusterArgs {
     volumeSize: number
 }
 
-export default async function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
+export default function (name: string, args: ClusterArgs, opts: ComponentResourceOptionsWithProvider) {
     const tags = { iac: `pulumi-${name}` }
 
     const subnetIds = pulumi.all([args.vpc.privateSubnetIds, args.vpc.publicSubnetIds])
@@ -109,5 +109,5 @@ export default async function (name: string, args: ClusterArgs, opts: ComponentR
         })
     })
 
-    return { kubeconfig: cluster.getKubeconfig({ profileName }).result, cluster }
+    return { cluster }
 }
