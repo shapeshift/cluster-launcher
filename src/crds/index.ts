@@ -1,6 +1,6 @@
 import * as k8s from '@pulumi/kubernetes'
 import * as pulumi from '@pulumi/pulumi'
-import { certmanager } from './types/cert-manager'
+import { cert_manager } from './types/cert-manager'
 
 export const deploy = (
     namespace: string,
@@ -22,7 +22,7 @@ export const deploy = (
     )
 
     // Also Issuer for ACME using lets encrypt
-    new certmanager.v1.ClusterIssuer(
+    new cert_manager.v1.ClusterIssuer(
         'lets-encrypt',
         {
             apiVersion: 'cert-manager.io/v1',

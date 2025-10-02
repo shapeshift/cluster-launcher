@@ -15,7 +15,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 // https://github.com/aws/aws-node-termination-handler/tree/main/config/helm/aws-node-termination-handler
                 chart: 'oci://public.ecr.aws/aws-ec2/helm/aws-node-termination-handler',
                 namespace: args.namespace,
-                version: '0.27.0',
+                version: '0.27.2',
                 values: {
                     enableSpotInterruptionDraining: 'true',
                     enableRebalanceDraining: 'false',

@@ -20,7 +20,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 chart: 'oci://registry-1.docker.io/bitnamicharts/external-dns',
                 transformations: [(manifest: any) => (manifest.metadata.namespace = args.namespace)],
                 namespace: args.namespace,
-                version: '8.7.9',
+                version: '9.0.3',
                 values: {
                     resources: {
                         limits: {
