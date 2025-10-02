@@ -10,10 +10,30 @@ export type Challenge = import("./challenge").Challenge;
 export const Challenge: typeof import("./challenge").Challenge = null as any;
 utilities.lazyLoad(exports, ["Challenge"], () => require("./challenge"));
 
+export { ChallengeListArgs } from "./challengeList";
+export type ChallengeList = import("./challengeList").ChallengeList;
+export const ChallengeList: typeof import("./challengeList").ChallengeList = null as any;
+utilities.lazyLoad(exports, ["ChallengeList"], () => require("./challengeList"));
+
+export { ChallengePatchArgs } from "./challengePatch";
+export type ChallengePatch = import("./challengePatch").ChallengePatch;
+export const ChallengePatch: typeof import("./challengePatch").ChallengePatch = null as any;
+utilities.lazyLoad(exports, ["ChallengePatch"], () => require("./challengePatch"));
+
 export { OrderArgs } from "./order";
 export type Order = import("./order").Order;
 export const Order: typeof import("./order").Order = null as any;
 utilities.lazyLoad(exports, ["Order"], () => require("./order"));
+
+export { OrderListArgs } from "./orderList";
+export type OrderList = import("./orderList").OrderList;
+export const OrderList: typeof import("./orderList").OrderList = null as any;
+utilities.lazyLoad(exports, ["OrderList"], () => require("./orderList"));
+
+export { OrderPatchArgs } from "./orderPatch";
+export type OrderPatch = import("./orderPatch").OrderPatch;
+export const OrderPatch: typeof import("./orderPatch").OrderPatch = null as any;
+utilities.lazyLoad(exports, ["OrderPatch"], () => require("./orderPatch"));
 
 
 const _module = {
@@ -22,11 +42,19 @@ const _module = {
         switch (type) {
             case "kubernetes:acme.cert-manager.io/v1:Challenge":
                 return new Challenge(name, <any>undefined, { urn })
+            case "kubernetes:acme.cert-manager.io/v1:ChallengeList":
+                return new ChallengeList(name, <any>undefined, { urn })
+            case "kubernetes:acme.cert-manager.io/v1:ChallengePatch":
+                return new ChallengePatch(name, <any>undefined, { urn })
             case "kubernetes:acme.cert-manager.io/v1:Order":
                 return new Order(name, <any>undefined, { urn })
+            case "kubernetes:acme.cert-manager.io/v1:OrderList":
+                return new OrderList(name, <any>undefined, { urn })
+            case "kubernetes:acme.cert-manager.io/v1:OrderPatch":
+                return new OrderPatch(name, <any>undefined, { urn })
             default:
                 throw new Error(`unknown resource type ${type}`);
         }
     },
 };
-pulumi.runtime.registerResourceModule("crds", "acme.cert-manager.io/v1", _module)
+pulumi.runtime.registerResourceModule("cert-manager-crd", "acme.cert-manager.io/v1", _module)

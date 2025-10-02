@@ -13,18 +13,18 @@ utilities.lazyLoad(exports, ["Provider"], () => require("./provider"));
 
 // Export sub-modules:
 import * as acme from "./acme";
-import * as certmanager from "./certmanager";
+import * as cert_manager from "./cert_manager";
 import * as types from "./types";
 
 export {
     acme,
-    certmanager,
+    cert_manager,
     types,
 };
-pulumi.runtime.registerResourcePackage("crds", {
+pulumi.runtime.registerResourcePackage("cert-manager-crd", {
     version: utilities.getVersion(),
     constructProvider: (name: string, type: string, urn: string): pulumi.ProviderResource => {
-        if (type !== "pulumi:providers:crds") {
+        if (type !== "pulumi:providers:kubernetes") {
             throw new Error(`unknown provider type ${type}`);
         }
         return new Provider(name, <any>undefined, { urn });

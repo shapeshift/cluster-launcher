@@ -6,10 +6,12 @@ import * as inputs from "../../types/input";
 import * as outputs from "../../types/output";
 import * as utilities from "../../utilities";
 
-import {ObjectMeta} from "../../meta/v1";
-
 /**
- * A ClusterIssuer represents a certificate issuing authority which can be referenced as part of `issuerRef` fields. It is similar to an Issuer, however it is cluster-scoped and therefore can be referenced by resources that exist in *any* namespace, not just the same namespace as the referent.
+ * A ClusterIssuer represents a certificate issuing authority which can be
+ * referenced as part of `issuerRef` fields.
+ * It is similar to an Issuer, however it is cluster-scoped and therefore can
+ * be referenced by resources that exist in *any* namespace, not just the same
+ * namespace as the referent.
  */
 export class ClusterIssuer extends pulumi.CustomResource {
     /**
@@ -38,17 +40,20 @@ export class ClusterIssuer extends pulumi.CustomResource {
         return obj['__pulumiType'] === ClusterIssuer.__pulumiType;
     }
 
-    public readonly apiVersion!: pulumi.Output<"cert-manager.io/v1" | undefined>;
-    public readonly kind!: pulumi.Output<"ClusterIssuer" | undefined>;
-    public readonly metadata!: pulumi.Output<ObjectMeta | undefined>;
     /**
-     * Desired state of the ClusterIssuer resource.
+     * APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
      */
-    public readonly spec!: pulumi.Output<outputs.certmanager.v1.ClusterIssuerSpec>;
+    public readonly apiVersion!: pulumi.Output<"cert-manager.io/v1">;
     /**
-     * Status of the ClusterIssuer. This is set and managed automatically.
+     * Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
      */
-    public readonly status!: pulumi.Output<outputs.certmanager.v1.ClusterIssuerStatus | undefined>;
+    public readonly kind!: pulumi.Output<"ClusterIssuer">;
+    /**
+     * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+     */
+    public readonly metadata!: pulumi.Output<outputs.meta.v1.ObjectMeta>;
+    public readonly spec!: pulumi.Output<outputs.cert_manager.v1.ClusterIssuerSpec>;
+    public /*out*/ readonly status!: pulumi.Output<outputs.cert_manager.v1.ClusterIssuerStatus>;
 
     /**
      * Create a ClusterIssuer resource with the given unique name, arguments, and options.
@@ -65,7 +70,7 @@ export class ClusterIssuer extends pulumi.CustomResource {
             resourceInputs["kind"] = "ClusterIssuer";
             resourceInputs["metadata"] = args ? args.metadata : undefined;
             resourceInputs["spec"] = args ? args.spec : undefined;
-            resourceInputs["status"] = args ? args.status : undefined;
+            resourceInputs["status"] = undefined /*out*/;
         } else {
             resourceInputs["apiVersion"] = undefined /*out*/;
             resourceInputs["kind"] = undefined /*out*/;
@@ -82,15 +87,17 @@ export class ClusterIssuer extends pulumi.CustomResource {
  * The set of arguments for constructing a ClusterIssuer resource.
  */
 export interface ClusterIssuerArgs {
+    /**
+     * APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+     */
     apiVersion?: pulumi.Input<"cert-manager.io/v1">;
+    /**
+     * Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+     */
     kind?: pulumi.Input<"ClusterIssuer">;
-    metadata?: pulumi.Input<ObjectMeta>;
     /**
-     * Desired state of the ClusterIssuer resource.
+     * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
      */
-    spec?: pulumi.Input<inputs.certmanager.v1.ClusterIssuerSpecArgs>;
-    /**
-     * Status of the ClusterIssuer. This is set and managed automatically.
-     */
-    status?: pulumi.Input<inputs.certmanager.v1.ClusterIssuerStatusArgs>;
+    metadata?: pulumi.Input<inputs.meta.v1.ObjectMeta>;
+    spec?: pulumi.Input<inputs.cert_manager.v1.ClusterIssuerSpec>;
 }

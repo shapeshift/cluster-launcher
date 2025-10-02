@@ -7,33 +7,39 @@ import * as outputs from "../../types/output";
 import * as utilities from "../../utilities";
 
 /**
+ * Patch resources are used to modify existing Kubernetes resources by using
+ * Server-Side Apply updates. The name of the resource must be specified, but all other properties are optional. More than
+ * one patch may be applied to the same resource, and a random FieldManager name will be used for each Patch resource.
+ * Conflicts will result in an error by default, but can be forced using the "pulumi.com/patchForce" annotation. See the
+ * [Server-Side Apply Docs](https://www.pulumi.com/registry/packages/kubernetes/how-to-guides/managing-resources-with-server-side-apply/) for
+ * additional information about using Server-Side Apply to manage Kubernetes resources with Pulumi.
  * Order is a type to represent an Order with an ACME server
  */
-export class Order extends pulumi.CustomResource {
+export class OrderPatch extends pulumi.CustomResource {
     /**
-     * Get an existing Order resource's state with the given name, ID, and optional extra
+     * Get an existing OrderPatch resource's state with the given name, ID, and optional extra
      * properties used to qualify the lookup.
      *
      * @param name The _unique_ name of the resulting resource.
      * @param id The _unique_ provider ID of the resource to lookup.
      * @param opts Optional settings to control the behavior of the CustomResource.
      */
-    public static get(name: string, id: pulumi.Input<pulumi.ID>, opts?: pulumi.CustomResourceOptions): Order {
-        return new Order(name, undefined as any, { ...opts, id: id });
+    public static get(name: string, id: pulumi.Input<pulumi.ID>, opts?: pulumi.CustomResourceOptions): OrderPatch {
+        return new OrderPatch(name, undefined as any, { ...opts, id: id });
     }
 
     /** @internal */
-    public static readonly __pulumiType = 'kubernetes:acme.cert-manager.io/v1:Order';
+    public static readonly __pulumiType = 'kubernetes:acme.cert-manager.io/v1:OrderPatch';
 
     /**
-     * Returns true if the given object is an instance of Order.  This is designed to work even
+     * Returns true if the given object is an instance of OrderPatch.  This is designed to work even
      * when multiple copies of the Pulumi SDK have been loaded into the same process.
      */
-    public static isInstance(obj: any): obj is Order {
+    public static isInstance(obj: any): obj is OrderPatch {
         if (obj === undefined || obj === null) {
             return false;
         }
-        return obj['__pulumiType'] === Order.__pulumiType;
+        return obj['__pulumiType'] === OrderPatch.__pulumiType;
     }
 
     /**
@@ -47,18 +53,18 @@ export class Order extends pulumi.CustomResource {
     /**
      * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
      */
-    public readonly metadata!: pulumi.Output<outputs.meta.v1.ObjectMeta>;
-    public readonly spec!: pulumi.Output<outputs.acme.v1.OrderSpec>;
-    public /*out*/ readonly status!: pulumi.Output<outputs.acme.v1.OrderStatus>;
+    public readonly metadata!: pulumi.Output<outputs.meta.v1.ObjectMetaPatch>;
+    public readonly spec!: pulumi.Output<outputs.acme.v1.OrderSpecPatch>;
+    public /*out*/ readonly status!: pulumi.Output<outputs.acme.v1.OrderStatusPatch>;
 
     /**
-     * Create a Order resource with the given unique name, arguments, and options.
+     * Create a OrderPatch resource with the given unique name, arguments, and options.
      *
      * @param name The _unique_ name of the resource.
      * @param args The arguments to use to populate this resource's properties.
      * @param opts A bag of options that control this resource's behavior.
      */
-    constructor(name: string, args?: OrderArgs, opts?: pulumi.CustomResourceOptions) {
+    constructor(name: string, args?: OrderPatchArgs, opts?: pulumi.CustomResourceOptions) {
         let resourceInputs: pulumi.Inputs = {};
         opts = opts || {};
         if (!opts.id) {
@@ -75,14 +81,14 @@ export class Order extends pulumi.CustomResource {
             resourceInputs["status"] = undefined /*out*/;
         }
         opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
-        super(Order.__pulumiType, name, resourceInputs, opts);
+        super(OrderPatch.__pulumiType, name, resourceInputs, opts);
     }
 }
 
 /**
- * The set of arguments for constructing a Order resource.
+ * The set of arguments for constructing a OrderPatch resource.
  */
-export interface OrderArgs {
+export interface OrderPatchArgs {
     /**
      * APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
      */
@@ -94,6 +100,6 @@ export interface OrderArgs {
     /**
      * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
      */
-    metadata?: pulumi.Input<inputs.meta.v1.ObjectMeta>;
-    spec?: pulumi.Input<inputs.acme.v1.OrderSpec>;
+    metadata?: pulumi.Input<inputs.meta.v1.ObjectMetaPatch>;
+    spec?: pulumi.Input<inputs.acme.v1.OrderSpecPatch>;
 }

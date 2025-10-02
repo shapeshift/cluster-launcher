@@ -6,12 +6,16 @@ import * as inputs from "../../types/input";
 import * as outputs from "../../types/output";
 import * as utilities from "../../utilities";
 
-import {ObjectMeta} from "../../meta/v1";
-
 /**
- * A CertificateRequest is used to request a signed certificate from one of the configured issuers.
- *  All fields within the CertificateRequest's `spec` are immutable after creation. A CertificateRequest will either succeed or fail, as denoted by its `status.state` field.
- *  A CertificateRequest is a one-shot resource, meaning it represents a single point in time request for a certificate and cannot be re-used.
+ * A CertificateRequest is used to request a signed certificate from one of the
+ * configured issuers.
+ *
+ * All fields within the CertificateRequest's `spec` are immutable after creation.
+ * A CertificateRequest will either succeed or fail, as denoted by its `Ready` status
+ * condition and its `status.failureTime` field.
+ *
+ * A CertificateRequest is a one-shot resource, meaning it represents a single
+ * point in time request for a certificate and cannot be re-used.
  */
 export class CertificateRequest extends pulumi.CustomResource {
     /**
@@ -40,17 +44,20 @@ export class CertificateRequest extends pulumi.CustomResource {
         return obj['__pulumiType'] === CertificateRequest.__pulumiType;
     }
 
-    public readonly apiVersion!: pulumi.Output<"cert-manager.io/v1" | undefined>;
-    public readonly kind!: pulumi.Output<"CertificateRequest" | undefined>;
-    public readonly metadata!: pulumi.Output<ObjectMeta | undefined>;
     /**
-     * Desired state of the CertificateRequest resource.
+     * APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
      */
-    public readonly spec!: pulumi.Output<outputs.certmanager.v1.CertificateRequestSpec>;
+    public readonly apiVersion!: pulumi.Output<"cert-manager.io/v1">;
     /**
-     * Status of the CertificateRequest. This is set and managed automatically.
+     * Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
      */
-    public readonly status!: pulumi.Output<outputs.certmanager.v1.CertificateRequestStatus | undefined>;
+    public readonly kind!: pulumi.Output<"CertificateRequest">;
+    /**
+     * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+     */
+    public readonly metadata!: pulumi.Output<outputs.meta.v1.ObjectMeta>;
+    public readonly spec!: pulumi.Output<outputs.cert_manager.v1.CertificateRequestSpec>;
+    public /*out*/ readonly status!: pulumi.Output<outputs.cert_manager.v1.CertificateRequestStatus>;
 
     /**
      * Create a CertificateRequest resource with the given unique name, arguments, and options.
@@ -67,7 +74,7 @@ export class CertificateRequest extends pulumi.CustomResource {
             resourceInputs["kind"] = "CertificateRequest";
             resourceInputs["metadata"] = args ? args.metadata : undefined;
             resourceInputs["spec"] = args ? args.spec : undefined;
-            resourceInputs["status"] = args ? args.status : undefined;
+            resourceInputs["status"] = undefined /*out*/;
         } else {
             resourceInputs["apiVersion"] = undefined /*out*/;
             resourceInputs["kind"] = undefined /*out*/;
@@ -84,15 +91,17 @@ export class CertificateRequest extends pulumi.CustomResource {
  * The set of arguments for constructing a CertificateRequest resource.
  */
 export interface CertificateRequestArgs {
+    /**
+     * APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+     */
     apiVersion?: pulumi.Input<"cert-manager.io/v1">;
+    /**
+     * Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+     */
     kind?: pulumi.Input<"CertificateRequest">;
-    metadata?: pulumi.Input<ObjectMeta>;
     /**
-     * Desired state of the CertificateRequest resource.
+     * Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
      */
-    spec?: pulumi.Input<inputs.certmanager.v1.CertificateRequestSpecArgs>;
-    /**
-     * Status of the CertificateRequest. This is set and managed automatically.
-     */
-    status?: pulumi.Input<inputs.certmanager.v1.CertificateRequestStatusArgs>;
+    metadata?: pulumi.Input<inputs.meta.v1.ObjectMeta>;
+    spec?: pulumi.Input<inputs.cert_manager.v1.CertificateRequestSpec>;
 }

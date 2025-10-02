@@ -18,7 +18,7 @@ export class Deployment extends k8s.helm.v3.Chart {
                 repo: 'aws-ebs-csi-driver',
                 chart: 'aws-ebs-csi-driver',
                 namespace: args.namespace,
-                version: '2.41.0',
+                version: '2.49.1',
                 values: {
                     controller: {
                         region: args.providers.aws.region,
