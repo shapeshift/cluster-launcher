@@ -10,7 +10,6 @@
     "homepage": "https://pulumi.com",
     "repository": "https://github.com/pulumi/pulumi-kubernetes",
     "license": "Apache-2.0",
-    "main": "bin/index.js",
     "scripts": {
         "build": "tsc",
         "postinstall": "node ./scripts/postinstall.js"
