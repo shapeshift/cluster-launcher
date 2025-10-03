@@ -22,6 +22,9 @@ export class Deployment extends k8s.helm.v3.Chart {
                 namespace: args.namespace,
                 version: '9.0.3',
                 values: {
+                    image: {
+                        repository: 'bitnamilegacy/external-dns'
+                    },
                     resources: {
                         limits: {
                             cpu: '50m',
