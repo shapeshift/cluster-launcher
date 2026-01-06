@@ -83,6 +83,7 @@ export default function (name: string, args: ClusterArgs, opts: ComponentResourc
                         cluster: cluster,
                         instanceTypes: nodeGroup.instanceTypes,
                         capacityType: nodeGroup.type,
+                        amiType: 'AL2023_x86_64_STANDARD',
                         subnetIds: [id],
                         nodeRole: cluster.instanceRoles[0],
                         labels: {
