@@ -61,6 +61,11 @@ export default function (name: string, args: ClusterArgs, opts: ComponentResourc
                 }
             ],
             ebsOptimized: 'true',
+            metadataOptions: {
+                httpEndpoint: "enabled",
+                httpTokens: "required",
+                httpPutResponseHopLimit: 2,
+            },
             tagSpecifications: [
                 {
                     resourceType: 'instance',
